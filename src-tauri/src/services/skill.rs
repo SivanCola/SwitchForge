@@ -41,7 +41,7 @@ pub enum SyncMethod {
 pub enum SkillStorageLocation {
     /// SwitchForge 管理目录 (~/.switchforge/skills/)
     #[default]
-    CcSwitch,
+    Switchforge,
     /// Agent Skills 统一标准目录 (~/.agents/skills/)
     Unified,
 }
@@ -475,7 +475,7 @@ impl SkillService {
     pub fn get_ssot_dir() -> Result<PathBuf> {
         let location = crate::settings::get_skill_storage_location();
         let dir = match location {
-            SkillStorageLocation::CcSwitch => get_app_config_dir().join("skills"),
+            SkillStorageLocation::Switchforge => get_app_config_dir().join("skills"),
             SkillStorageLocation::Unified => {
                 crate::config::get_home_dir().join(".agents").join("skills")
             }
@@ -1153,7 +1153,7 @@ impl SkillService {
         // 1. 解析旧目录和新目录（不改设置）
         let old_dir = Self::get_ssot_dir()?;
         let new_dir = match target {
-            SkillStorageLocation::CcSwitch => get_app_config_dir().join("skills"),
+            SkillStorageLocation::Switchforge => get_app_config_dir().join("skills"),
             SkillStorageLocation::Unified => {
                 crate::config::get_home_dir().join(".agents").join("skills")
             }
