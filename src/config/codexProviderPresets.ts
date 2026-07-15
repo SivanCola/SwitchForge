@@ -15,10 +15,6 @@ export interface CodexProviderPreset {
   auth: Record<string, unknown>;
   config: string;
   isOfficial?: boolean;
-  /** Temporary compatibility fields for the retired selector implementation. */
-  isPartner?: boolean;
-  primePartner?: boolean;
-  partnerPromotionKey?: string;
   category?: ProviderCategory;
   isCustomTemplate?: boolean;
   endpointCandidates?: string[];

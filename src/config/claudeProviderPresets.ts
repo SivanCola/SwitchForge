@@ -25,10 +25,6 @@ export interface ProviderPreset {
   apiKeyUrl?: string;
   settingsConfig: object;
   isOfficial?: boolean;
-  /** Temporary compatibility fields for the retired selector implementation. */
-  isPartner?: boolean;
-  primePartner?: boolean;
-  partnerPromotionKey?: string;
   category?: ProviderCategory;
   apiKeyField?: "ANTHROPIC_AUTH_TOKEN" | "ANTHROPIC_API_KEY";
   templateValues?: Record<string, TemplateValueConfig>;
