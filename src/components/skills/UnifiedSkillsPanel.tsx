@@ -114,12 +114,7 @@ const UnifiedSkillsPanel = React.forwardRef<
   const enabledCounts = useMemo(() => {
     const counts = {
       claude: 0,
-      "claude-desktop": 0,
       codex: 0,
-      gemini: 0,
-      opencode: 0,
-      openclaw: 0,
-      hermes: 0,
     };
     if (!skills) return counts;
     skills.forEach((skill) => {
@@ -145,15 +140,8 @@ const UnifiedSkillsPanel = React.forwardRef<
       message: t("skills.uninstallConfirm", { name: skill.name }),
       onConfirm: async () => {
         try {
-          // 构建 skillKey 用于更新 discoverable 缓存
-          const installName =
-            skill.directory.split(/[/\\]/).pop()?.toLowerCase() ||
-            skill.directory.toLowerCase();
-          const skillKey = `${installName}:${skill.repoOwner?.toLowerCase() || ""}:${skill.repoName?.toLowerCase() || ""}`;
-
           const result = await uninstallMutation.mutateAsync({
             id: skill.id,
-            skillKey,
           });
           setConfirmDialog(null);
           toast.success(t("skills.uninstallSuccess", { name: skill.name }), {
@@ -742,10 +730,6 @@ const ImportSkillsDialog: React.FC<ImportSkillsDialogProps> = ({
         {
           claude: skill.foundIn.includes("claude"),
           codex: skill.foundIn.includes("codex"),
-          gemini: skill.foundIn.includes("gemini"),
-          opencode: skill.foundIn.includes("opencode"),
-          openclaw: false,
-          hermes: skill.foundIn.includes("hermes"),
         },
       ]),
     ),
@@ -768,10 +752,6 @@ const ImportSkillsDialog: React.FC<ImportSkillsDialogProps> = ({
         apps: selectedApps[directory] ?? {
           claude: false,
           codex: false,
-          gemini: false,
-          opencode: false,
-          openclaw: false,
-          hermes: false,
         },
       })),
     );
@@ -811,10 +791,6 @@ const ImportSkillsDialog: React.FC<ImportSkillsDialogProps> = ({
                         selectedApps[skill.directory] ?? {
                           claude: false,
                           codex: false,
-                          gemini: false,
-                          opencode: false,
-                          openclaw: false,
-                          hermes: false,
                         }
                       }
                       onToggle={(app, enabled) => {
@@ -824,10 +800,6 @@ const ImportSkillsDialog: React.FC<ImportSkillsDialogProps> = ({
                             ...(prev[skill.directory] ?? {
                               claude: false,
                               codex: false,
-                              gemini: false,
-                              opencode: false,
-                              openclaw: false,
-                              hermes: false,
                             }),
                             [app]: enabled,
                           },

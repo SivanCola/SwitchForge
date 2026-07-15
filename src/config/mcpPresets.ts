@@ -1,7 +1,7 @@
 import { McpServer, McpServerSpec } from "../types";
 import { isWindows } from "@/lib/platform";
 
-export type McpPreset = Omit<McpServer, "enabled" | "description">;
+export type McpPreset = Omit<McpServer, "apps" | "enabled" | "description">;
 
 // 创建跨平台 npx 命令配置
 // Windows 需要使用 cmd /c wrapper 来执行 npx.cmd

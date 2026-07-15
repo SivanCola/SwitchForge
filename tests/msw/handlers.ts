@@ -4,13 +4,9 @@ import type { McpServer, Provider, Settings } from "@/types";
 import {
   addProvider,
   deleteProvider,
-  deleteSession,
   getCurrentProviderId,
-  getLiveProviderIds,
-  getSessionMessages,
   getProviders,
   listProviders,
-  listSessions,
   resetProviderState,
   setCurrentProviderId,
   updateProvider,
@@ -44,6 +40,7 @@ export const handlers = [
   http.post(`${TAURI_ENDPOINT}/get_skills_migration_result`, () =>
     success(null),
   ),
+  http.post(`${TAURI_ENDPOINT}/get_installed_skills`, () => success([])),
   http.post(`${TAURI_ENDPOINT}/get_providers`, async ({ request }) => {
     const { app } = await withJson<{ app: AppId }>(request);
     return success(getProviders(app));
@@ -67,20 +64,6 @@ export const handlers = [
   ),
 
   http.post(`${TAURI_ENDPOINT}/update_tray_menu`, () => success(true)),
-
-  http.post(`${TAURI_ENDPOINT}/get_opencode_live_provider_ids`, () =>
-    success(getLiveProviderIds("opencode")),
-  ),
-
-  http.post(`${TAURI_ENDPOINT}/get_openclaw_live_provider_ids`, () =>
-    success(getLiveProviderIds("openclaw")),
-  ),
-
-  http.post(`${TAURI_ENDPOINT}/get_openclaw_default_model`, () =>
-    success({ primary: null, fallback: [] }),
-  ),
-
-  http.post(`${TAURI_ENDPOINT}/scan_openclaw_config_health`, () => success([])),
 
   http.post(`${TAURI_ENDPOINT}/switch_provider`, async ({ request }) => {
     const { id, app } = await withJson<{ id: string; app: AppId }>(request);
@@ -124,48 +107,6 @@ export const handlers = [
   }),
 
   http.post(`${TAURI_ENDPOINT}/open_external`, () => success(true)),
-
-  http.post(`${TAURI_ENDPOINT}/list_sessions`, () => success(listSessions())),
-
-  http.post(`${TAURI_ENDPOINT}/get_session_messages`, async ({ request }) => {
-    const { providerId, sourcePath } = await withJson<{
-      providerId: string;
-      sourcePath: string;
-    }>(request);
-    return success(getSessionMessages(providerId, sourcePath));
-  }),
-
-  http.post(`${TAURI_ENDPOINT}/delete_session`, async ({ request }) => {
-    const { providerId, sessionId, sourcePath } = await withJson<{
-      providerId: string;
-      sessionId: string;
-      sourcePath: string;
-    }>(request);
-    return success(deleteSession(providerId, sessionId, sourcePath));
-  }),
-
-  http.post(`${TAURI_ENDPOINT}/delete_sessions`, async ({ request }) => {
-    const { items = [] } = await withJson<{
-      items?: {
-        providerId: string;
-        sessionId: string;
-        sourcePath: string;
-      }[];
-    }>(request);
-
-    return success(
-      items.map((item) => ({
-        providerId: item.providerId,
-        sessionId: item.sessionId,
-        sourcePath: item.sourcePath,
-        success: deleteSession(
-          item.providerId,
-          item.sessionId,
-          item.sourcePath,
-        ),
-      })),
-    );
-  }),
 
   // MCP APIs
   http.post(`${TAURI_ENDPOINT}/get_mcp_config`, async ({ request }) => {
@@ -311,73 +252,4 @@ export const handlers = [
     success({ success: true }),
   ),
 
-  // Proxy status (for SettingsPage / ProxyPanel hooks)
-  http.post(`${TAURI_ENDPOINT}/get_proxy_status`, () =>
-    success({
-      running: false,
-      address: "127.0.0.1",
-      port: 0,
-      active_connections: 0,
-      total_requests: 0,
-      success_requests: 0,
-      failed_requests: 0,
-      success_rate: 0,
-      uptime_seconds: 0,
-      current_provider: null,
-      current_provider_id: null,
-      last_request_at: null,
-      last_error: null,
-      failover_count: 0,
-      active_targets: [],
-    }),
-  ),
-
-  http.post(`${TAURI_ENDPOINT}/get_proxy_takeover_status`, () =>
-    success({
-      claude: false,
-      codex: false,
-      gemini: false,
-    }),
-  ),
-
-  http.post(`${TAURI_ENDPOINT}/is_live_takeover_active`, () => success(false)),
-
-  // Failover / circuit breaker defaults
-  http.post(`${TAURI_ENDPOINT}/get_failover_queue`, () => success([])),
-  http.post(`${TAURI_ENDPOINT}/get_available_providers_for_failover`, () =>
-    success([]),
-  ),
-  http.post(`${TAURI_ENDPOINT}/add_to_failover_queue`, () => success(true)),
-  http.post(`${TAURI_ENDPOINT}/remove_from_failover_queue`, () =>
-    success(true),
-  ),
-  http.post(`${TAURI_ENDPOINT}/reorder_failover_queue`, () => success(true)),
-  http.post(`${TAURI_ENDPOINT}/set_failover_item_enabled`, () => success(true)),
-
-  http.post(`${TAURI_ENDPOINT}/get_circuit_breaker_config`, () =>
-    success({
-      failureThreshold: 3,
-      successThreshold: 2,
-      timeoutSeconds: 60,
-      errorRateThreshold: 50,
-      minRequests: 5,
-    }),
-  ),
-  http.post(`${TAURI_ENDPOINT}/update_circuit_breaker_config`, () =>
-    success(true),
-  ),
-  http.post(`${TAURI_ENDPOINT}/get_provider_health`, () =>
-    success({
-      provider_id: "mock-provider",
-      app_type: "claude",
-      is_healthy: true,
-      consecutive_failures: 0,
-      last_success_at: null,
-      last_failure_at: null,
-      last_error: null,
-      updated_at: new Date().toISOString(),
-    }),
-  ),
-  http.post(`${TAURI_ENDPOINT}/reset_circuit_breaker`, () => success(true)),
-  http.post(`${TAURI_ENDPOINT}/get_circuit_breaker_stats`, () => success(null)),
 ];

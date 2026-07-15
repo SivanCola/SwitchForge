@@ -1,23 +1,22 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Info, Loader2, Save } from "lucide-react";
+import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Save, Loader2, Info } from "lucide-react";
-import { toast } from "sonner";
 import {
-  getStreamCheckConfig,
-  saveStreamCheckConfig,
-  type StreamCheckConfig,
-} from "@/lib/api/connectivity-check";
+  getConnectivityCheckConfig,
+  saveConnectivityCheckConfig,
+  type ConnectivityCheckConfig,
+} from "@/lib/api/connectivity";
 
 export function ConnectivityCheckConfigPanel() {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 使用字符串状态以支持完全清空数字输入框
   const [config, setConfig] = useState({
     timeoutSecs: "8",
     maxRetries: "1",
@@ -25,45 +24,45 @@ export function ConnectivityCheckConfigPanel() {
   });
 
   useEffect(() => {
-    loadConfig();
+    void loadConfig();
   }, []);
 
   async function loadConfig() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getStreamCheckConfig();
+      const data = await getConnectivityCheckConfig();
       setConfig({
         timeoutSecs: String(data.timeoutSecs),
         maxRetries: String(data.maxRetries),
         degradedThresholdMs: String(data.degradedThresholdMs),
       });
-    } catch (e) {
-      setError(String(e));
+    } catch (loadError) {
+      setError(String(loadError));
     } finally {
       setIsLoading(false);
     }
   }
 
   async function handleSave() {
-    // 解析数字，空值使用默认值，0 是有效值
-    const parseNum = (val: string, defaultVal: number) => {
-      const n = parseInt(val);
-      return isNaN(n) ? defaultVal : n;
+    const parseNumber = (value: string, fallback: number) => {
+      const parsed = Number.parseInt(value, 10);
+      return Number.isNaN(parsed) ? fallback : parsed;
     };
+
     try {
       setIsSaving(true);
-      const parsed: StreamCheckConfig = {
-        timeoutSecs: parseNum(config.timeoutSecs, 8),
-        maxRetries: parseNum(config.maxRetries, 1),
-        degradedThresholdMs: parseNum(config.degradedThresholdMs, 6000),
+      const parsed: ConnectivityCheckConfig = {
+        timeoutSecs: parseNumber(config.timeoutSecs, 8),
+        maxRetries: parseNumber(config.maxRetries, 1),
+        degradedThresholdMs: parseNumber(config.degradedThresholdMs, 6000),
       };
-      await saveStreamCheckConfig(parsed);
-      toast.success(t("streamCheck.configSaved"), {
-        closeButton: true,
-      });
-    } catch (e) {
-      toast.error(t("streamCheck.configSaveFailed") + ": " + String(e));
+      await saveConnectivityCheckConfig(parsed);
+      toast.success(t("connectivityCheck.configSaved"), { closeButton: true });
+    } catch (saveError) {
+      toast.error(
+        `${t("connectivityCheck.configSaveFailed")}: ${String(saveError)}`,
+      );
     } finally {
       setIsSaving(false);
     }
@@ -79,60 +78,59 @@ export function ConnectivityCheckConfigPanel() {
 
   return (
     <div className="space-y-6">
-      {error && (
+      {error ? (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      )}
+      ) : null}
 
-      {/* 连通检测语义说明：可达 ≠ 配置正确 */}
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          {t("streamCheck.connectivityNote", {
-            defaultValue:
-              "连通检测仅探测供应商地址是否可达，不发送真实模型请求。收到任意响应即视为“可达”——这不代表鉴权或模型配置一定正确。",
-          })}
+          {t("connectivityCheck.connectivityNote")}
         </AlertDescription>
       </Alert>
 
-      {/* 检查参数配置 */}
       <div className="space-y-4">
         <h4 className="text-sm font-medium text-muted-foreground">
-          {t("streamCheck.checkParams")}
+          {t("connectivityCheck.checkParams")}
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="timeoutSecs">{t("streamCheck.timeout")}</Label>
+            <Label htmlFor="timeoutSecs">
+              {t("connectivityCheck.timeout")}
+            </Label>
             <Input
               id="timeoutSecs"
               type="number"
               min={2}
               max={60}
               value={config.timeoutSecs}
-              onChange={(e) =>
-                setConfig({ ...config, timeoutSecs: e.target.value })
+              onChange={(event) =>
+                setConfig({ ...config, timeoutSecs: event.target.value })
               }
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="maxRetries">{t("streamCheck.maxRetries")}</Label>
+            <Label htmlFor="maxRetries">
+              {t("connectivityCheck.maxRetries")}
+            </Label>
             <Input
               id="maxRetries"
               type="number"
               min={0}
               max={5}
               value={config.maxRetries}
-              onChange={(e) =>
-                setConfig({ ...config, maxRetries: e.target.value })
+              onChange={(event) =>
+                setConfig({ ...config, maxRetries: event.target.value })
               }
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="degradedThresholdMs">
-              {t("streamCheck.degradedThreshold")}
+              {t("connectivityCheck.degradedThreshold")}
             </Label>
             <Input
               id="degradedThresholdMs"
@@ -141,8 +139,11 @@ export function ConnectivityCheckConfigPanel() {
               max={30000}
               step={1000}
               value={config.degradedThresholdMs}
-              onChange={(e) =>
-                setConfig({ ...config, degradedThresholdMs: e.target.value })
+              onChange={(event) =>
+                setConfig({
+                  ...config,
+                  degradedThresholdMs: event.target.value,
+                })
               }
             />
           </div>
@@ -152,16 +153,11 @@ export function ConnectivityCheckConfigPanel() {
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t("common.saving")}
-            </>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              {t("common.save")}
-            </>
+            <Save className="mr-2 h-4 w-4" />
           )}
+          {isSaving ? t("common.saving") : t("common.save")}
         </Button>
       </div>
     </div>

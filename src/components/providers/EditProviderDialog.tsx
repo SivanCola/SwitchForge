@@ -15,10 +15,7 @@ interface EditProviderDialogProps {
   open: boolean;
   provider: Provider | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (payload: {
-    provider: Provider;
-    originalId?: string;
-  }) => Promise<void> | void;
+  onSubmit: (payload: { provider: Provider }) => Promise<void> | void;
   appId: SupportedAppId;
 }
 
@@ -160,10 +157,7 @@ export function EditProviderDialog({
         ...(values.meta ? { meta: values.meta } : {}),
       };
 
-      await onSubmit({
-        provider: updatedProvider,
-        originalId: provider.id,
-      });
+      await onSubmit({ provider: updatedProvider });
       onOpenChange(false);
     },
     [appId, onSubmit, onOpenChange, provider],

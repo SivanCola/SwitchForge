@@ -1,8 +1,6 @@
 import type {
   CodexApiFormat,
   CodexCatalogModel,
-  CodexChatReasoning,
-  PromptCacheRoutingMode,
   ProviderCategory,
 } from "../types";
 import type { PresetTheme } from "./claudeProviderPresets";
@@ -23,8 +21,6 @@ export interface CodexProviderPreset {
   iconColor?: string;
   apiFormat?: CodexApiFormat;
   modelCatalog?: CodexCatalogModel[];
-  codexChatReasoning?: CodexChatReasoning;
-  promptCacheRouting?: PromptCacheRoutingMode;
 }
 
 export function generateThirdPartyAuth(apiKey: string): Record<string, string> {
@@ -50,9 +46,7 @@ requires_openai_auth = true
 }
 
 /**
- * SwitchForge supports native Codex Responses endpoints only. Chat Completions,
- * Anthropic conversion, OAuth reverse proxies, and promoted providers are
- * intentionally excluded.
+ * SwitchForge supports native Codex Responses endpoints only.
  */
 export const codexProviderPresets: CodexProviderPreset[] = [
   {

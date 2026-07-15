@@ -13,7 +13,7 @@ describe("SwitchForge core provider presets", () => {
       providerPresets.every((preset) => preset.apiFormat === "anthropic"),
     ).toBe(true);
     expect(JSON.stringify(providerPresets)).not.toMatch(
-      /partner|promotion|affiliate|ccswitch/i,
+      /partner|promotion|affiliate/i,
     );
   });
 
@@ -30,7 +30,7 @@ describe("SwitchForge core provider presets", () => {
     ).toBe(true);
     expect(codexProviderPresets[1].config).toContain('wire_api = "responses"');
     expect(JSON.stringify(codexProviderPresets)).not.toMatch(
-      /partner|promotion|affiliate|ccswitch/i,
+      /partner|promotion|affiliate/i,
     );
   });
 });

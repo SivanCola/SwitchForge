@@ -22,7 +22,7 @@ import type { Provider } from "@/types";
 import type { AppId } from "@/lib/api";
 import { providersApi } from "@/lib/api/providers";
 import { useDragSort } from "@/hooks/useDragSort";
-import { useStreamCheck } from "@/hooks/useStreamCheck";
+import { useConnectivityCheck } from "@/hooks/useConnectivityCheck";
 import { ProviderCard } from "@/components/providers/ProviderCard";
 import { ProviderEmptyState } from "@/components/providers/ProviderEmptyState";
 import { Input } from "@/components/ui/input";
@@ -58,7 +58,7 @@ export function ProviderList({
 }: ProviderListProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const { checkProvider, isChecking } = useStreamCheck(appId);
+  const { checkProvider, isChecking } = useConnectivityCheck(appId);
   const { sortedProviders, sensors, handleDragEnd } = useDragSort(
     providers,
     appId,

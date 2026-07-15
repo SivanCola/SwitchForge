@@ -1,5 +1,4 @@
 import type { AppId } from "@/lib/api";
-import type { VisibleApps } from "@/types";
 import { ProviderIcon } from "@/components/ProviderIcon";
 import {
   APP_REGISTRY,
@@ -18,7 +17,6 @@ const APP_BADGE_ICON: Partial<
 interface AppSwitcherProps {
   activeApp: SupportedAppId;
   onSwitch: (app: SupportedAppId) => void;
-  visibleApps?: VisibleApps;
   compact?: boolean;
 }
 
@@ -28,7 +26,6 @@ const STORAGE_KEY = "switchforge:last-app";
 export function AppSwitcher({
   activeApp,
   onSwitch,
-  visibleApps,
   compact,
 }: AppSwitcherProps) {
   const handleSwitch = (app: SupportedAppId) => {
@@ -37,15 +34,9 @@ export function AppSwitcher({
     onSwitch(app);
   };
   const iconSize = 20;
-  // Filter apps based on visibility settings (default all visible)
-  const appsToShow = ALL_APPS.filter((app) => {
-    if (!visibleApps) return true;
-    return visibleApps[app];
-  });
-
   return (
     <div className="inline-flex bg-muted rounded-xl p-1 gap-1">
-      {appsToShow.map((app) => {
+      {ALL_APPS.map((app) => {
         const appInfo = APP_REGISTRY[app as keyof typeof APP_REGISTRY];
         const badgeConfig = APP_BADGE_ICON[app];
         const BadgeIcon = badgeConfig?.icon;
