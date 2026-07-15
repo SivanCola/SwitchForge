@@ -8,14 +8,13 @@ import {
 } from "react";
 import { motion } from "framer-motion";
 import {
+  Database,
+  FlaskConical,
+  FolderSearch,
+  HardDriveDownload,
   Loader2,
   Save,
-  FolderSearch,
-  Database,
-  Cloud,
   ScrollText,
-  HardDriveDownload,
-  FlaskConical,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -37,40 +36,36 @@ import { settingsApi } from "@/lib/api";
 import { LanguageSettings } from "@/components/settings/LanguageSettings";
 import { ThemeSettings } from "@/components/settings/ThemeSettings";
 import { WindowSettings } from "@/components/settings/WindowSettings";
-import { AppVisibilitySettings } from "@/components/settings/AppVisibilitySettings";
 import { SkillStorageLocationSettings } from "@/components/settings/SkillStorageLocationSettings";
 import { SkillSyncMethodSettings } from "@/components/settings/SkillSyncMethodSettings";
 import { TerminalSettings } from "@/components/settings/TerminalSettings";
 import { DirectorySettings } from "@/components/settings/DirectorySettings";
 import { ImportExportSection } from "@/components/settings/ImportExportSection";
 import { BackupListSection } from "@/components/settings/BackupListSection";
-import { WebdavSyncSection } from "@/components/settings/WebdavSyncSection";
 import { AboutSection } from "@/components/settings/AboutSection";
-import { ProxyTabContent } from "@/components/settings/ProxyTabContent";
 import { ConnectivityCheckConfigPanel } from "@/components/usage/ConnectivityCheckConfigPanel";
-import { UsageDashboard } from "@/components/usage/UsageDashboard";
 import { LogConfigPanel } from "@/components/settings/LogConfigPanel";
-import { AuthCenterPanel } from "@/components/settings/AuthCenterPanel";
-import { CodexAuthSettings } from "@/components/settings/CodexAuthSettings";
 import { useInstalledSkills } from "@/hooks/useSkills";
 import { useSettings } from "@/hooks/useSettings";
 import { useImportExport } from "@/hooks/useImportExport";
 import { useTranslation } from "react-i18next";
 import type { SettingsFormState } from "@/hooks/useSettings";
 
-interface SettingsDialogProps {
+interface SettingsPageProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImportSuccess?: () => void | Promise<void>;
   defaultTab?: string;
 }
 
+const SETTINGS_TABS = new Set(["general", "advanced", "about"]);
+
 export function SettingsPage({
   open,
   onOpenChange,
   onImportSuccess,
   defaultTab = "general",
-}: SettingsDialogProps) {
+}: SettingsPageProps) {
   const { t } = useTranslation();
   const {
     settings,
@@ -91,7 +86,6 @@ export function SettingsPage({
     requiresRestart,
     acknowledgeRestart,
   } = useSettings();
-
   const {
     selectedFile,
     status: importStatus,
@@ -104,24 +98,19 @@ export function SettingsPage({
     clearSelection,
     resetStatus,
   } = useImportExport({ onImportSuccess });
-
   const { data: installedSkills } = useInstalledSkills();
-
-  const [activeTab, setActiveTab] = useState<string>("general");
+  const [activeTab, setActiveTab] = useState("general");
   const [showRestartPrompt, setShowRestartPrompt] = useState(false);
   const tabScrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setActiveTab(defaultTab);
-      resetStatus();
-    }
-  }, [open, resetStatus, defaultTab]);
+    if (!open) return;
+    setActiveTab(SETTINGS_TABS.has(defaultTab) ? defaultTab : "general");
+    resetStatus();
+  }, [defaultTab, open, resetStatus]);
 
   useEffect(() => {
-    if (requiresRestart) {
-      setShowRestartPrompt(true);
-    }
+    if (requiresRestart) setShowRestartPrompt(true);
   }, [requiresRestart]);
 
   useLayoutEffect(() => {
@@ -131,7 +120,6 @@ export function SettingsPage({
   }, [activeTab]);
 
   const closeAfterSave = useCallback(() => {
-    // 保存成功后关闭：不再重置语言，避免需要“保存两次”才生效
     acknowledgeRestart();
     clearSelection();
     resetStatus();
@@ -164,7 +152,6 @@ export function SettingsPage({
       closeAfterSave();
       return;
     }
-
     try {
       await settingsApi.restart();
     } catch (error) {
@@ -175,17 +162,9 @@ export function SettingsPage({
     }
   }, [closeAfterSave, t]);
 
-  // 通用设置即时保存（无需手动点击）
-  // 使用 autoSaveSettings 避免误触发系统 API（开机自启、Claude 插件等）
-  // 返回保存是否成功：需要在保存成功后追加动作的调用方（如统一会话历史
-  // 关闭后的备份还原）据此短路，其余调用方可忽略返回值。
   const handleAutoSave = useCallback(
     async (updates: Partial<SettingsFormState>): Promise<boolean> => {
       if (!settings) return false;
-      // 乐观更新前捕获旧值：autoSaveSettings 发送的是全量表单状态，后端按
-      // diff 触发副作用（如统一会话开关的 live 重写与历史迁移）。保存失败
-      // 不回滚的话，失败的变更会滞留在表单里，被之后任意一次无关保存原样
-      // 重放，绕过确认弹窗。
       const previousValues = Object.fromEntries(
         Object.keys(updates).map((key) => [
           key,
@@ -213,7 +192,7 @@ export function SettingsPage({
   const isBusy = useMemo(() => isLoading && !settings, [isLoading, settings]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden px-6">
+    <div className="flex h-full flex-col overflow-hidden px-6">
       {isBusy ? (
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -222,61 +201,47 @@ export function SettingsPage({
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
-          className="flex flex-col h-full"
+          className="flex h-full flex-col"
         >
-          <TabsList className="grid w-full grid-cols-6 mb-6 glass rounded-lg">
+          <TabsList className="glass mb-6 grid w-full grid-cols-3 rounded-lg">
             <TabsTrigger value="general">
               {t("settings.tabGeneral")}
-            </TabsTrigger>
-            <TabsTrigger value="proxy">{t("settings.tabProxy")}</TabsTrigger>
-            <TabsTrigger value="auth">
-              {t("settings.tabAuth", { defaultValue: "认证" })}
             </TabsTrigger>
             <TabsTrigger value="advanced">
               {t("settings.tabAdvanced")}
             </TabsTrigger>
-            <TabsTrigger value="usage">{t("usage.title")}</TabsTrigger>
             <TabsTrigger value="about">{t("common.about")}</TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div
               ref={tabScrollContainerRef}
-              className="flex-1 overflow-y-auto overflow-x-hidden pr-2"
+              className="flex-1 overflow-x-hidden overflow-y-auto pr-2"
             >
-              <TabsContent value="general" className="space-y-6 mt-0">
-                {settings ? (
+              <TabsContent value="general" className="mt-0 space-y-6">
+                {settings && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
                     className="space-y-6"
                   >
                     <LanguageSettings
                       value={settings.language}
-                      onChange={(lang) => handleAutoSave({ language: lang })}
+                      onChange={(language) => handleAutoSave({ language })}
                     />
                     <ThemeSettings />
-                    <AppVisibilitySettings
-                      settings={settings}
-                      onChange={handleAutoSave}
-                    />
                     <SkillStorageLocationSettings
                       value={settings.skillStorageLocation ?? "cc_switch"}
                       installedCount={installedSkills?.length ?? 0}
-                      onMigrated={(location) =>
-                        updateSettings({ skillStorageLocation: location })
+                      onMigrated={(skillStorageLocation) =>
+                        updateSettings({ skillStorageLocation })
                       }
                     />
                     <SkillSyncMethodSettings
                       value={settings.skillSyncMethod ?? "auto"}
-                      onChange={(method) =>
-                        handleAutoSave({ skillSyncMethod: method })
+                      onChange={(skillSyncMethod) =>
+                        handleAutoSave({ skillSyncMethod })
                       }
-                    />
-                    <CodexAuthSettings
-                      settings={settings}
-                      onChange={handleAutoSave}
                     />
                     <WindowSettings
                       settings={settings}
@@ -284,258 +249,130 @@ export function SettingsPage({
                     />
                     <TerminalSettings
                       value={settings.preferredTerminal}
-                      onChange={(terminal) =>
-                        handleAutoSave({ preferredTerminal: terminal })
+                      onChange={(preferredTerminal) =>
+                        handleAutoSave({ preferredTerminal })
                       }
                     />
                   </motion.div>
-                ) : null}
+                )}
               </TabsContent>
 
-              <TabsContent value="proxy" className="space-y-6 mt-0 pb-4">
-                {settings ? (
-                  <ProxyTabContent
-                    settings={settings}
-                    onAutoSave={handleAutoSave}
-                  />
-                ) : null}
-              </TabsContent>
-
-              <TabsContent value="auth" className="space-y-6 mt-0 pb-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="space-y-6"
-                >
-                  <AuthCenterPanel />
-                </motion.div>
-              </TabsContent>
-
-              <TabsContent value="advanced" className="space-y-6 mt-0 pb-4">
-                {settings ? (
+              <TabsContent value="advanced" className="mt-0 space-y-6 pb-4">
+                {settings && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-4"
                   >
                     <Accordion
                       type="multiple"
-                      defaultValue={[]}
                       className="w-full space-y-4"
+                      defaultValue={[]}
                     >
-                      <AccordionItem
+                      <SettingsAccordionItem
                         value="directory"
-                        className="rounded-xl glass-card overflow-hidden"
+                        icon={FolderSearch}
+                        iconClass="text-primary"
+                        title={t("settings.advanced.configDir.title")}
+                        description={t(
+                          "settings.advanced.configDir.description",
+                        )}
                       >
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            <FolderSearch className="h-5 w-5 text-primary" />
-                            <div className="text-left">
-                              <h3 className="text-base font-semibold">
-                                {t("settings.advanced.configDir.title")}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-normal">
-                                {t("settings.advanced.configDir.description")}
-                              </p>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
-                          <DirectorySettings
-                            appConfigDir={appConfigDir}
-                            resolvedDirs={resolvedDirs}
-                            onAppConfigChange={updateAppConfigDir}
-                            onBrowseAppConfig={browseAppConfigDir}
-                            onResetAppConfig={resetAppConfigDir}
-                            claudeDir={settings.claudeConfigDir}
-                            codexDir={settings.codexConfigDir}
-                            geminiDir={settings.geminiConfigDir}
-                            opencodeDir={settings.opencodeConfigDir}
-                            openclawDir={settings.openclawConfigDir}
-                            hermesDir={settings.hermesConfigDir}
-                            onDirectoryChange={updateDirectory}
-                            onBrowseDirectory={browseDirectory}
-                            onResetDirectory={resetDirectory}
-                          />
-                        </AccordionContent>
-                      </AccordionItem>
+                        <DirectorySettings
+                          appConfigDir={appConfigDir}
+                          resolvedDirs={resolvedDirs}
+                          onAppConfigChange={updateAppConfigDir}
+                          onBrowseAppConfig={browseAppConfigDir}
+                          onResetAppConfig={resetAppConfigDir}
+                          claudeDir={settings.claudeConfigDir}
+                          codexDir={settings.codexConfigDir}
+                          onDirectoryChange={updateDirectory}
+                          onBrowseDirectory={browseDirectory}
+                          onResetDirectory={resetDirectory}
+                        />
+                      </SettingsAccordionItem>
 
-                      <AccordionItem
+                      <SettingsAccordionItem
                         value="data"
-                        className="rounded-xl glass-card overflow-hidden"
+                        icon={Database}
+                        iconClass="text-blue-500"
+                        title={t("settings.advanced.data.title")}
+                        description={t("settings.advanced.data.description")}
                       >
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            <Database className="h-5 w-5 text-blue-500" />
-                            <div className="text-left">
-                              <h3 className="text-base font-semibold">
-                                {t("settings.advanced.data.title")}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-normal">
-                                {t("settings.advanced.data.description")}
-                              </p>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
-                          <ImportExportSection
-                            status={importStatus}
-                            selectedFile={selectedFile}
-                            errorMessage={errorMessage}
-                            backupId={backupId}
-                            isImporting={isImporting}
-                            onSelectFile={selectImportFile}
-                            onImport={importConfig}
-                            onExport={exportConfig}
-                            onClear={clearSelection}
-                          />
-                        </AccordionContent>
-                      </AccordionItem>
+                        <ImportExportSection
+                          status={importStatus}
+                          selectedFile={selectedFile}
+                          errorMessage={errorMessage}
+                          backupId={backupId}
+                          isImporting={isImporting}
+                          onSelectFile={selectImportFile}
+                          onImport={importConfig}
+                          onExport={exportConfig}
+                          onClear={clearSelection}
+                        />
+                      </SettingsAccordionItem>
 
-                      <AccordionItem
+                      <SettingsAccordionItem
                         value="backup"
-                        className="rounded-xl glass-card overflow-hidden"
+                        icon={HardDriveDownload}
+                        iconClass="text-amber-500"
+                        title={t("settings.advanced.backup.title", {
+                          defaultValue: "Backup & Restore",
+                        })}
+                        description={t("settings.advanced.backup.description", {
+                          defaultValue:
+                            "Manage local database backups and restore points",
+                        })}
                       >
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            <HardDriveDownload className="h-5 w-5 text-amber-500" />
-                            <div className="text-left">
-                              <h3 className="text-base font-semibold">
-                                {t("settings.advanced.backup.title", {
-                                  defaultValue: "Backup & Restore",
-                                })}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-normal">
-                                {t("settings.advanced.backup.description", {
-                                  defaultValue:
-                                    "Manage automatic backups, view and restore database snapshots",
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
-                          <BackupListSection
-                            backupIntervalHours={settings.backupIntervalHours}
-                            backupRetainCount={settings.backupRetainCount}
-                            onSettingsChange={(updates) =>
-                              handleAutoSave(updates)
-                            }
-                          />
-                        </AccordionContent>
-                      </AccordionItem>
+                        <BackupListSection
+                          backupIntervalHours={settings.backupIntervalHours}
+                          backupRetainCount={settings.backupRetainCount}
+                          onSettingsChange={handleAutoSave}
+                        />
+                      </SettingsAccordionItem>
 
-                      <AccordionItem
-                        value="cloudSync"
-                        className="rounded-xl glass-card overflow-hidden"
+                      <SettingsAccordionItem
+                        value="connectivity"
+                        icon={FlaskConical}
+                        iconClass="text-emerald-500"
+                        title={t("settings.advanced.connectivityCheck.title")}
+                        description={t(
+                          "settings.advanced.connectivityCheck.description",
+                        )}
                       >
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            <Cloud className="h-5 w-5 text-blue-500" />
-                            <div className="text-left">
-                              <h3 className="text-base font-semibold">
-                                {t("settings.advanced.cloudSync.title")}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-normal">
-                                {t("settings.advanced.cloudSync.description")}
-                              </p>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
-                          <WebdavSyncSection
-                            config={settings?.webdavSync}
-                            s3Config={settings?.s3Sync}
-                            settings={settings}
-                            onAutoSave={handleAutoSave}
-                          />
-                        </AccordionContent>
-                      </AccordionItem>
+                        <ConnectivityCheckConfigPanel />
+                      </SettingsAccordionItem>
 
-                      <AccordionItem
-                        value="connectivityCheck"
-                        className="rounded-xl glass-card overflow-hidden"
+                      <SettingsAccordionItem
+                        value="logs"
+                        icon={ScrollText}
+                        iconClass="text-cyan-500"
+                        title={t("settings.advanced.logConfig.title")}
+                        description={t(
+                          "settings.advanced.logConfig.description",
+                        )}
                       >
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            <FlaskConical className="h-5 w-5 text-emerald-500" />
-                            <div className="text-left">
-                              <h3 className="text-base font-semibold">
-                                {t("settings.advanced.connectivityCheck.title")}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-normal">
-                                {t(
-                                  "settings.advanced.connectivityCheck.description",
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
-                          <ConnectivityCheckConfigPanel />
-                        </AccordionContent>
-                      </AccordionItem>
-
-                      <AccordionItem
-                        value="logConfig"
-                        className="rounded-xl glass-card overflow-hidden"
-                      >
-                        <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50 data-[state=open]:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            <ScrollText className="h-5 w-5 text-cyan-500" />
-                            <div className="text-left">
-                              <h3 className="text-base font-semibold">
-                                {t("settings.advanced.logConfig.title")}
-                              </h3>
-                              <p className="text-sm text-muted-foreground font-normal">
-                                {t("settings.advanced.logConfig.description")}
-                              </p>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-6 pb-6 pt-4 border-t border-border/50">
-                          <LogConfigPanel />
-                        </AccordionContent>
-                      </AccordionItem>
+                        <LogConfigPanel />
+                      </SettingsAccordionItem>
                     </Accordion>
                   </motion.div>
-                ) : null}
+                )}
               </TabsContent>
 
               <TabsContent value="about" className="mt-0">
                 <AboutSection isPortable={isPortable} />
               </TabsContent>
-
-              <TabsContent value="usage" className="mt-0">
-                <UsageDashboard
-                  refreshIntervalMs={settings?.usageDashboardRefreshIntervalMs}
-                  onRefreshIntervalChange={(usageDashboardRefreshIntervalMs) =>
-                    handleAutoSave({ usageDashboardRefreshIntervalMs })
-                  }
-                />
-              </TabsContent>
             </div>
 
             {activeTab === "advanced" && settings && (
-              <div
-                className="flex-shrink-0 pt-4 border-t border-border-default"
-                style={{ backgroundColor: "hsl(var(--background))" }}
-              >
-                <div className="px-6 flex items-center justify-end gap-3">
+              <div className="shrink-0 border-t border-border-default pt-4">
+                <div className="flex items-center justify-end gap-3 px-6">
                   <Button onClick={handleSave} disabled={isSaving}>
                     {isSaving ? (
-                      <span className="inline-flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        {t("settings.saving")}
-                      </span>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        {t("common.save")}
-                      </>
+                      <Save className="mr-2 h-4 w-4" />
                     )}
+                    {isSaving ? t("settings.saving") : t("common.save")}
                   </Button>
                 </div>
               </div>
@@ -546,34 +383,65 @@ export function SettingsPage({
 
       <Dialog
         open={showRestartPrompt}
-        onOpenChange={(open) => !open && handleRestartLater()}
+        onOpenChange={(isOpen) => !isOpen && handleRestartLater()}
       >
-        <DialogContent zIndex="alert" className="max-w-md glass border-border">
+        <DialogContent zIndex="alert" className="glass max-w-md border-border">
           <DialogHeader>
             <DialogTitle>{t("settings.restartRequired")}</DialogTitle>
           </DialogHeader>
-          <div className="px-6">
-            <p className="text-sm text-muted-foreground">
-              {t("settings.restartRequiredMessage")}
-            </p>
+          <div className="px-6 text-sm text-muted-foreground">
+            {t("settings.restartRequiredMessage")}
           </div>
           <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={handleRestartLater}
-              className="hover:bg-muted/50"
-            >
+            <Button variant="ghost" onClick={handleRestartLater}>
               {t("settings.restartLater")}
             </Button>
-            <Button
-              onClick={handleRestartNow}
-              className="bg-primary hover:bg-primary/90"
-            >
+            <Button onClick={handleRestartNow}>
               {t("settings.restartNow")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+interface SettingsAccordionItemProps {
+  value: string;
+  icon: typeof Database;
+  iconClass: string;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}
+
+function SettingsAccordionItem({
+  value,
+  icon: Icon,
+  iconClass,
+  title,
+  description,
+  children,
+}: SettingsAccordionItemProps) {
+  return (
+    <AccordionItem
+      value={value}
+      className="glass-card overflow-hidden rounded-xl"
+    >
+      <AccordionTrigger className="px-6 py-4 hover:bg-muted/50 hover:no-underline data-[state=open]:bg-muted/50">
+        <div className="flex items-center gap-3">
+          <Icon className={`h-5 w-5 ${iconClass}`} />
+          <div className="text-left">
+            <h3 className="text-base font-semibold">{title}</h3>
+            <p className="text-sm font-normal text-muted-foreground">
+              {description}
+            </p>
+          </div>
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="border-t border-border/50 px-6 pb-6 pt-4">
+        {children}
+      </AccordionContent>
+    </AccordionItem>
   );
 }

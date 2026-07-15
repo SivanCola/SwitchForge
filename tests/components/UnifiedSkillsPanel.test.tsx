@@ -99,13 +99,7 @@ describe("UnifiedSkillsPanel", () => {
   it("opens the import dialog without crashing when app toggles render", async () => {
     const ref = createRef<UnifiedSkillsPanelHandle>();
 
-    render(
-      <UnifiedSkillsPanel
-        ref={ref}
-        onOpenDiscovery={() => {}}
-        currentApp="claude"
-      />,
-    );
+    render(<UnifiedSkillsPanel ref={ref} currentApp="claude" />);
 
     await act(async () => {
       await ref.current?.openImport();

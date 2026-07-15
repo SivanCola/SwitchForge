@@ -16,14 +16,7 @@ vi.mock("@/hooks/useDragSort", () => ({
 vi.mock("@/components/providers/ProviderCard", () => ({
   ProviderCard: (props: any) => {
     providerCardRenderSpy(props);
-    const {
-      provider,
-      onSwitch,
-      onEdit,
-      onDelete,
-      onDuplicate,
-      onConfigureUsage,
-    } = props;
+    const { provider, onSwitch, onEdit, onDelete, onDuplicate } = props;
 
     return (
       <div data-testid={`provider-card-${provider.id}`}>
@@ -44,12 +37,6 @@ vi.mock("@/components/providers/ProviderCard", () => ({
           onClick={() => onDuplicate(provider)}
         >
           duplicate
-        </button>
-        <button
-          data-testid={`usage-${provider.id}`}
-          onClick={() => onConfigureUsage(provider)}
-        >
-          usage
         </button>
         <button
           data-testid={`delete-${provider.id}`}
@@ -201,7 +188,6 @@ describe("ProviderList Component", () => {
     const handleEdit = vi.fn();
     const handleDelete = vi.fn();
     const handleDuplicate = vi.fn();
-    const handleUsage = vi.fn();
     const handleOpenWebsite = vi.fn();
 
     useDragSortMock.mockReturnValue({
@@ -219,7 +205,6 @@ describe("ProviderList Component", () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onDuplicate={handleDuplicate}
-        onConfigureUsage={handleUsage}
         onOpenWebsite={handleOpenWebsite}
       />,
     );
@@ -235,12 +220,12 @@ describe("ProviderList Component", () => {
     // Drag attributes from useSortable
     expect(
       providerCardRenderSpy.mock.calls[0][0].dragHandleProps?.attributes[
-      "data-dnd-id"
+        "data-dnd-id"
       ],
     ).toBe("b");
     expect(
       providerCardRenderSpy.mock.calls[1][0].dragHandleProps?.attributes[
-      "data-dnd-id"
+        "data-dnd-id"
       ],
     ).toBe("a");
 
@@ -248,13 +233,11 @@ describe("ProviderList Component", () => {
     fireEvent.click(screen.getByTestId("switch-b"));
     fireEvent.click(screen.getByTestId("edit-b"));
     fireEvent.click(screen.getByTestId("duplicate-b"));
-    fireEvent.click(screen.getByTestId("usage-b"));
     fireEvent.click(screen.getByTestId("delete-a"));
 
     expect(handleSwitch).toHaveBeenCalledWith(providerB);
     expect(handleEdit).toHaveBeenCalledWith(providerB);
     expect(handleDuplicate).toHaveBeenCalledWith(providerB);
-    expect(handleUsage).toHaveBeenCalledWith(providerB);
     expect(handleDelete).toHaveBeenCalledWith(providerA);
 
     // Verify useDragSort call parameters

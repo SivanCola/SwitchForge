@@ -45,12 +45,10 @@ import {
 } from "@/components/ui/dialog";
 
 interface UnifiedSkillsPanelProps {
-  onOpenDiscovery: () => void;
   currentApp: AppId;
 }
 
 export interface UnifiedSkillsPanelHandle {
-  openDiscovery: () => void;
   openImport: () => void;
   openInstallFromZip: () => void;
   openRestoreFromBackup: () => void;
@@ -67,7 +65,7 @@ function formatSkillBackupDate(unixSeconds: number): string {
 const UnifiedSkillsPanel = React.forwardRef<
   UnifiedSkillsPanelHandle,
   UnifiedSkillsPanelProps
->(({ onOpenDiscovery, currentApp }, ref) => {
+>(({ currentApp }, ref) => {
   const { t } = useTranslation();
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -338,7 +336,6 @@ const UnifiedSkillsPanel = React.forwardRef<
   };
 
   React.useImperativeHandle(ref, () => ({
-    openDiscovery: onOpenDiscovery,
     openImport: handleOpenImport,
     openInstallFromZip: handleInstallFromZip,
     openRestoreFromBackup: handleOpenRestoreFromBackup,
