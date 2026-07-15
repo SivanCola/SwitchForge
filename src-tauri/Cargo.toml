@@ -1,17 +1,17 @@
 [package]
-name = "cc-switch"
-version = "3.17.0"
-description = "All-in-One Assistant for Claude Code, Codex & Gemini CLI"
-authors = ["Jason Young"]
+name = "switchforge"
+version = "0.1.0-alpha.1"
+description = "A focused provider, MCP, and skills control deck for Claude Code and Codex"
+authors = ["SivanCola", "Jason Young"]
 license = "MIT"
-repository = "https://github.com/farion1231/cc-switch"
+repository = "https://github.com/SivanCola/SwitchForge"
 edition = "2021"
 rust-version = "1.85.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "cc_switch_lib"
+name = "switchforge_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 doctest = false
 
