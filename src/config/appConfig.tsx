@@ -15,24 +15,10 @@ export interface AppConfig {
   badgeClass: string;
 }
 
-export const APP_IDS: AppId[] = [
-  "claude",
-  "claude-desktop",
-  "codex",
-  "gemini",
-  "opencode",
-  "openclaw",
-  "hermes",
-];
+export const APP_IDS: AppId[] = ["claude", "codex"];
 
 /** App IDs shown in Skills panels (excludes OpenClaw — it doesn't support Skills) */
-export const SKILLS_APP_IDS: AppId[] = [
-  "claude",
-  "codex",
-  "gemini",
-  "opencode",
-  "hermes",
-];
+export const SKILLS_APP_IDS: AppId[] = ["claude", "codex"];
 
 /** App IDs shown in MCP panels (excludes OpenClaw) */
 export const MCP_APP_IDS: AppId[] = [...SKILLS_APP_IDS];

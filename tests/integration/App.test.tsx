@@ -1,6 +1,12 @@
 import { Suspense, type ComponentType } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  within,
+} from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { resetProviderState } from "../msw/state";
 import { emitTauriEvent } from "../msw/tauriMocks";
@@ -22,7 +28,6 @@ vi.mock("@/components/providers/ProviderList", () => ({
     onSwitch,
     onEdit,
     onDuplicate,
-    onConfigureUsage,
     onOpenWebsite,
     onCreate,
   }: any) => (
@@ -35,9 +40,6 @@ vi.mock("@/components/providers/ProviderList", () => ({
       <button onClick={() => onEdit(providers[currentProviderId])}>edit</button>
       <button onClick={() => onDuplicate(providers[currentProviderId])}>
         duplicate
-      </button>
-      <button onClick={() => onConfigureUsage(providers[currentProviderId])}>
-        usage
       </button>
       <button onClick={() => onOpenWebsite("https://example.com")}>
         open-website
@@ -90,17 +92,6 @@ vi.mock("@/components/providers/EditProviderDialog", () => ({
     ) : null,
 }));
 
-vi.mock("@/components/UsageScriptModal", () => ({
-  default: ({ isOpen, provider, onSave, onClose }: any) =>
-    isOpen ? (
-      <div data-testid="usage-modal">
-        <span data-testid="usage-provider">{provider?.id}</span>
-        <button onClick={() => onSave("script-code")}>save-script</button>
-        <button onClick={() => onClose()}>close-usage</button>
-      </div>
-    ) : null,
-}));
-
 vi.mock("@/components/ConfirmDialog", () => ({
   ConfirmDialog: ({ isOpen, onConfirm, onCancel }: any) =>
     isOpen ? (
@@ -125,6 +116,10 @@ vi.mock("@/components/UpdateBadge", () => ({
   UpdateBadge: ({ onClick }: any) => (
     <button onClick={onClick}>update-badge</button>
   ),
+}));
+
+vi.mock("@/components/FirstRunNoticeDialog", () => ({
+  FirstRunNoticeDialog: () => null,
 }));
 
 vi.mock("@/components/mcp/McpPanel", () => ({
@@ -166,17 +161,17 @@ describe("App integration with MSW", () => {
       ),
     );
 
+    const mainNavigation = screen.getByRole("navigation", {
+      name: "SwitchForge",
+    });
+    expect(within(mainNavigation).getAllByRole("button")).toHaveLength(4);
+
     fireEvent.click(screen.getByText("switch-codex"));
     await waitFor(() =>
       expect(screen.getByTestId("provider-list").textContent).toContain(
         "codex-1",
       ),
     );
-
-    fireEvent.click(screen.getByText("usage"));
-    expect(screen.getByTestId("usage-modal")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("save-script"));
-    fireEvent.click(screen.getByText("close-usage"));
 
     fireEvent.click(screen.getByText("create"));
     expect(screen.getByTestId("add-provider-dialog")).toBeInTheDocument();
