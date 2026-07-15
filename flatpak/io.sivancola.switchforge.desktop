@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=CC Switch
+Name=SwitchForge
 Comment=All-in-One Assistant for Claude Code, Codex & Gemini CLI
-Exec=cc-switch
-Icon=com.ccswitch.desktop
+Exec=switchforge
+Icon=io.sivancola.switchforge
 Terminal=false
 Categories=Utility;Development;
 StartupNotify=true

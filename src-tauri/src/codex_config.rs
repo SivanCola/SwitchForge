@@ -12,13 +12,13 @@ use std::fs;
 use std::process::Command;
 use toml_edit::DocumentMut;
 
-pub const CC_SWITCH_CODEX_MODEL_PROVIDER_ID: &str = "custom";
+pub const SWITCHFORGE_CODEX_MODEL_PROVIDER_ID: &str = "custom";
 /// Temporary model-provider id used while the built-in `codex-official`
-/// provider is routed through CC Switch.  A dedicated id is an ownership
+/// provider is routed through SwitchForge.  A dedicated id is an ownership
 /// marker: unlike a generic localhost `base_url`, it can be detected and
 /// cleaned up without mistaking a user's own local provider for takeover.
-pub const CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID: &str = "cc-switch-official";
-pub const CC_SWITCH_CODEX_MODEL_CATALOG_FILENAME: &str = "cc-switch-model-catalog.json";
+pub const SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID: &str = "switchforge-official";
+pub const SWITCHFORGE_CODEX_MODEL_CATALOG_FILENAME: &str = "switchforge-model-catalog.json";
 const CODEX_PROXY_AUTH_PLACEHOLDER: &str = "PROXY_MANAGED";
 
 /// Top-level `config.toml` key that controls Codex's built-in web-search tool.
@@ -26,7 +26,7 @@ pub(crate) const CODEX_WEB_SEARCH_FIELD: &str = "web_search";
 /// Value that disables the web-search tool. Some native `/responses` gateways
 /// reject a `web_search` tool with `responses_feature_not_supported` ("tool type
 /// 'web_search' is not supported by this gateway phase"), so for those we write
-/// this per the vendors' official Codex docs. Also doubles as cc-switch's
+/// this per the vendors' official Codex docs. Also doubles as switchforge's
 /// ownership sentinel: we only ever remove a `web_search` key whose value equals
 /// this string, never a user's own setting.
 pub(crate) const CODEX_WEB_SEARCH_DISABLED: &str = "disabled";
@@ -104,7 +104,7 @@ const CODEX_MODEL_CATALOG_TEMPLATE_SLUG: &str = "gpt-5.5";
 
 /// Which Codex tool surface the generated model catalog should target.
 ///
-/// - `ProxyChat`: cc-switch's proxy takes over and converts Responses<->Chat,
+/// - `ProxyChat`: switchforge's proxy takes over and converts Responses<->Chat,
 ///   so the catalog keeps Codex's default tool set (incl. the freeform
 ///   `apply_patch` custom tool, which the proxy rewrites to a function tool).
 /// - `NativeResponses`: Codex talks directly to a provider's native
@@ -115,7 +115,7 @@ const CODEX_MODEL_CATALOG_TEMPLATE_SLUG: &str = "gpt-5.5";
 pub enum CodexCatalogToolProfile {
     ProxyChat,
     NativeResponses,
-    /// Codex talks (through cc-switch's proxy) to a native Anthropic Messages
+    /// Codex talks (through switchforge's proxy) to a native Anthropic Messages
     /// gateway. Like `NativeResponses` it must suppress Codex's freeform custom
     /// tools — the Responses→Anthropic transform keeps only `function` tools.
     /// Additionally the Codex `web_search` hosted tool is unusable on this path
@@ -174,7 +174,7 @@ pub fn get_codex_config_path() -> PathBuf {
 }
 
 pub fn get_codex_model_catalog_path() -> PathBuf {
-    get_codex_config_dir().join(CC_SWITCH_CODEX_MODEL_CATALOG_FILENAME)
+    get_codex_config_dir().join(SWITCHFORGE_CODEX_MODEL_CATALOG_FILENAME)
 }
 
 /// 获取 Codex 供应商配置文件路径
@@ -931,7 +931,7 @@ fn set_codex_model_catalog_json_field(
 
     match catalog_path {
         Some(_) => {
-            doc["model_catalog_json"] = toml_edit::value(CC_SWITCH_CODEX_MODEL_CATALOG_FILENAME);
+            doc["model_catalog_json"] = toml_edit::value(SWITCHFORGE_CODEX_MODEL_CATALOG_FILENAME);
         }
         None => {
             let should_remove = doc
@@ -939,7 +939,7 @@ fn set_codex_model_catalog_json_field(
                 .and_then(|item| item.as_str())
                 .map(|path| {
                     Path::new(path).file_name().and_then(|name| name.to_str())
-                        == Some(CC_SWITCH_CODEX_MODEL_CATALOG_FILENAME)
+                        == Some(SWITCHFORGE_CODEX_MODEL_CATALOG_FILENAME)
                 })
                 .unwrap_or(false);
             if should_remove {
@@ -955,12 +955,12 @@ fn set_codex_model_catalog_json_field(
 /// web-search tool off. When `disable` is true we write `web_search = "disabled"`
 /// (the catalog's `supports_search_tool` does NOT gate this — the request-time
 /// tool comes from the config, defaulting on). When false we *remove* the field,
-/// but only when it carries cc-switch's own `"disabled"` sentinel, so switching
+/// but only when it carries switchforge's own `"disabled"` sentinel, so switching
 /// back to a web-search-capable provider re-enables it without clobbering a
 /// user's manual setting.
 ///
 /// The caller decides `disable` (see `codex_native_gateway_rejects_web_search`);
-/// lifecycle is bound to the cc-switch catalog pointer so the field is set/cleaned
+/// lifecycle is bound to the switchforge catalog pointer so the field is set/cleaned
 /// up wherever the native catalog is written/removed.
 fn set_codex_native_web_search_field(config_text: &str, disable: bool) -> Result<String, AppError> {
     let mut doc = config_text
@@ -1020,13 +1020,13 @@ pub fn prepare_codex_config_text_with_model_catalog(
 }
 
 /// Reverse of `prepare_codex_config_text_with_model_catalog`: read the
-/// cc-switch–maintained catalog file referenced by `~/.codex/config.toml` and
+/// switchforge–maintained catalog file referenced by `~/.codex/config.toml` and
 /// convert it back into the simplified shape the frontend table uses:
 /// `{ "models": [{ "model", "displayName"?, "contextWindow"?, hidden overrides... }, ...] }`.
 ///
 /// We only reverse-parse catalogs whose `model_catalog_json` path is the
-/// cc-switch–generated file (identified by filename
-/// `cc-switch-model-catalog.json`). A user-managed external catalog file is
+/// switchforge–generated file (identified by filename
+/// `switchforge-model-catalog.json`). A user-managed external catalog file is
 /// left alone — surfacing its richer structure as the simplified table would
 /// be a downgrade we can't safely round-trip.
 ///
@@ -1060,7 +1060,7 @@ pub fn read_codex_model_catalog_simplified_from_live() -> Result<Option<Value>, 
     ))
 }
 
-/// Given `config.toml` text, resolve the on-disk path of the cc-switch–owned
+/// Given `config.toml` text, resolve the on-disk path of the switchforge–owned
 /// catalog file (returns `None` if `model_catalog_json` is absent or points at
 /// a file we don't own). Relative paths fall back to `generated_path`.
 pub(crate) fn resolve_cc_switch_catalog_path(
@@ -1079,7 +1079,7 @@ pub(crate) fn resolve_cc_switch_catalog_path(
 
     let referenced_path = Path::new(catalog_path_str);
     let is_cc_switch_owned = referenced_path.file_name().and_then(|name| name.to_str())
-        == Some(CC_SWITCH_CODEX_MODEL_CATALOG_FILENAME);
+        == Some(SWITCHFORGE_CODEX_MODEL_CATALOG_FILENAME);
     if !is_cc_switch_owned {
         return None;
     }
@@ -1423,7 +1423,7 @@ pub fn apply_codex_official_proxy_route(
     // A third-party takeover may have left the proxy placeholder in config.toml.
     // The official route must use Codex's native OpenAI login instead.
     doc.as_table_mut().remove("experimental_bearer_token");
-    doc["model_provider"] = toml_edit::value(CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID);
+    doc["model_provider"] = toml_edit::value(SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID);
 
     let mut providers = match doc.as_table_mut().remove("model_providers") {
         Some(item) => item.into_table().map_err(|_| {
@@ -1438,7 +1438,7 @@ pub fn apply_codex_official_proxy_route(
         }
     };
 
-    // Clean only CC Switch's placeholder from every stale provider table. Real
+    // Clean only SwitchForge's placeholder from every stale provider table. Real
     // user bearer tokens are preserved, as are all unrelated provider fields.
     remove_codex_proxy_placeholders_from_providers(&mut providers);
 
@@ -1446,16 +1446,16 @@ pub fn apply_codex_official_proxy_route(
     let table = codex_official_provider_table(Some(proxy_base_url), false);
 
     providers.insert(
-        CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID,
+        SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID,
         toml_edit::Item::Table(table),
     );
     doc["model_providers"] = toml_edit::Item::Table(providers);
     Ok(doc.to_string())
 }
 
-/// Whether a live Codex config is the official route projected by CC Switch.
+/// Whether a live Codex config is the official route projected by SwitchForge.
 pub fn codex_config_has_official_proxy_route(config_text: &str) -> bool {
-    if !config_text.contains(CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID) {
+    if !config_text.contains(SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID) {
         return false;
     }
     config_text
@@ -1467,17 +1467,17 @@ pub fn codex_config_has_official_proxy_route(config_text: &str) -> bool {
                 .map(str::to_string)
         })
         .as_deref()
-        == Some(CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
+        == Some(SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
 }
 
-/// Remove only the official takeover route owned by CC Switch. This is a
+/// Remove only the official takeover route owned by SwitchForge. This is a
 /// last-resort crash cleanup when no live backup or provider SSOT is usable.
 pub fn remove_codex_official_proxy_route(config_text: &str) -> Result<String, AppError> {
     let mut doc = config_text
         .parse::<DocumentMut>()
         .map_err(|e| AppError::Message(format!("Invalid Codex config.toml: {e}")))?;
     if doc.get("model_provider").and_then(|item| item.as_str())
-        != Some(CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
+        != Some(SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
     {
         return Ok(config_text.to_string());
     }
@@ -1489,7 +1489,7 @@ pub fn remove_codex_official_proxy_route(config_text: &str) -> Result<String, Ap
                 "Invalid Codex config.toml: model_providers must be a table".to_string(),
             )
         })?;
-        providers.remove(CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID);
+        providers.remove(SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID);
         remove_codex_proxy_placeholders_from_providers(&mut providers);
         if !providers.is_empty() {
             doc["model_providers"] = toml_edit::Item::Table(providers);
@@ -1533,7 +1533,7 @@ pub fn inject_codex_unified_session_bucket(config_text: &str) -> Result<String, 
     let existing_custom_conflicts = doc
         .get("model_providers")
         .and_then(|item| item.as_table())
-        .and_then(|providers| providers.get(CC_SWITCH_CODEX_MODEL_PROVIDER_ID))
+        .and_then(|providers| providers.get(SWITCHFORGE_CODEX_MODEL_PROVIDER_ID))
         .and_then(|item| item.as_table())
         .is_some_and(|table| !table_matches_codex_unified_official_provider(table));
     if existing_custom_conflicts {
@@ -1543,7 +1543,7 @@ pub fn inject_codex_unified_session_bucket(config_text: &str) -> Result<String, 
         return Ok(config_text.to_string());
     }
 
-    doc["model_provider"] = toml_edit::value(CC_SWITCH_CODEX_MODEL_PROVIDER_ID);
+    doc["model_provider"] = toml_edit::value(SWITCHFORGE_CODEX_MODEL_PROVIDER_ID);
 
     if doc.get("model_providers").is_none() {
         let mut parent = toml_edit::Table::new();
@@ -1551,9 +1551,9 @@ pub fn inject_codex_unified_session_bucket(config_text: &str) -> Result<String, 
         doc["model_providers"] = toml_edit::Item::Table(parent);
     }
     if let Some(providers) = doc["model_providers"].as_table_mut() {
-        if !providers.contains_key(CC_SWITCH_CODEX_MODEL_PROVIDER_ID) {
+        if !providers.contains_key(SWITCHFORGE_CODEX_MODEL_PROVIDER_ID) {
             providers.insert(
-                CC_SWITCH_CODEX_MODEL_PROVIDER_ID,
+                SWITCHFORGE_CODEX_MODEL_PROVIDER_ID,
                 toml_edit::Item::Table(codex_unified_official_provider_table()),
             );
         }
@@ -1574,14 +1574,14 @@ pub fn strip_codex_unified_session_bucket(config_text: &str) -> Result<String, A
         .map_err(|e| AppError::Message(format!("Invalid Codex config.toml: {e}")))?;
 
     if doc.get("model_provider").and_then(|item| item.as_str())
-        != Some(CC_SWITCH_CODEX_MODEL_PROVIDER_ID)
+        != Some(SWITCHFORGE_CODEX_MODEL_PROVIDER_ID)
     {
         return Ok(config_text.to_string());
     }
     let matches_injected = doc
         .get("model_providers")
         .and_then(|item| item.as_table())
-        .and_then(|providers| providers.get(CC_SWITCH_CODEX_MODEL_PROVIDER_ID))
+        .and_then(|providers| providers.get(SWITCHFORGE_CODEX_MODEL_PROVIDER_ID))
         .and_then(|item| item.as_table())
         .is_some_and(table_matches_codex_unified_official_provider);
     if !matches_injected {
@@ -1592,7 +1592,7 @@ pub fn strip_codex_unified_session_bucket(config_text: &str) -> Result<String, A
     let providers_empty = doc["model_providers"]
         .as_table_mut()
         .map(|providers| {
-            providers.remove(CC_SWITCH_CODEX_MODEL_PROVIDER_ID);
+            providers.remove(SWITCHFORGE_CODEX_MODEL_PROVIDER_ID);
             providers.is_empty()
         })
         .unwrap_or(false);
@@ -1943,9 +1943,9 @@ mod tests {
 
         assert_eq!(
             doc.get("model_provider").and_then(|v| v.as_str()),
-            Some(CC_SWITCH_CODEX_MODEL_PROVIDER_ID)
+            Some(SWITCHFORGE_CODEX_MODEL_PROVIDER_ID)
         );
-        let custom = doc["model_providers"][CC_SWITCH_CODEX_MODEL_PROVIDER_ID]
+        let custom = doc["model_providers"][SWITCHFORGE_CODEX_MODEL_PROVIDER_ID]
             .as_table()
             .expect("custom provider table");
         assert_eq!(custom.get("name").and_then(|v| v.as_str()), Some("OpenAI"));
@@ -1977,7 +1977,7 @@ command = "example"
 
         assert_eq!(
             doc.get("model_provider").and_then(toml::Value::as_str),
-            Some(CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
+            Some(SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
         );
         assert!(doc.get("experimental_bearer_token").is_none());
         assert!(
@@ -1985,7 +1985,7 @@ command = "example"
             "unrelated config survives"
         );
 
-        let provider = &doc["model_providers"][CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID];
+        let provider = &doc["model_providers"][SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID];
         assert_eq!(
             provider.get("base_url").and_then(toml::Value::as_str),
             Some("http://127.0.0.1:15721/v1")
@@ -2043,7 +2043,7 @@ model_providers = { rightcode = { name = "RightCode", experimental_bearer_token 
             .get("experimental_bearer_token")
             .is_none());
         assert!(projected_doc["model_providers"]
-            .get(CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
+            .get(SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
             .is_some());
 
         let cleaned = remove_codex_official_proxy_route(&projected).expect("clean projected");
@@ -2051,13 +2051,13 @@ model_providers = { rightcode = { name = "RightCode", experimental_bearer_token 
         assert!(cleaned_doc.get("model_provider").is_none());
         assert!(cleaned_doc["model_providers"].get("rightcode").is_some());
         assert!(cleaned_doc["model_providers"]
-            .get(CC_SWITCH_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
+            .get(SWITCHFORGE_CODEX_OFFICIAL_PROXY_PROVIDER_ID)
             .is_none());
     }
 
     #[test]
     fn unified_session_bucket_preserves_other_keys_and_explicit_routing() {
-        let with_catalog = "model_catalog_json = \"cc-switch-model-catalog.json\"\n";
+        let with_catalog = "model_catalog_json = \"switchforge-model-catalog.json\"\n";
         let injected = inject_codex_unified_session_bucket(with_catalog).expect("inject");
         assert!(injected.contains("model_catalog_json"));
         assert!(injected.contains("model_provider = \"custom\""));
@@ -2091,7 +2091,7 @@ base_url = "https://relay.example/v1"
         let stripped = strip_codex_unified_session_bucket(&injected).expect("strip");
         assert_eq!(stripped.trim(), "");
 
-        let with_catalog = "model_catalog_json = \"cc-switch-model-catalog.json\"\n";
+        let with_catalog = "model_catalog_json = \"switchforge-model-catalog.json\"\n";
         let injected = inject_codex_unified_session_bucket(with_catalog).expect("inject");
         let stripped = strip_codex_unified_session_bucket(&injected).expect("strip");
         assert_eq!(stripped, with_catalog);
@@ -2964,7 +2964,7 @@ base_url = "https://production.api/v1"
 [model_providers.any]
 name = "any"
 "#;
-        let catalog_path = Path::new("/tmp/cc-switch-model-catalog.json");
+        let catalog_path = Path::new("/tmp/switchforge-model-catalog.json");
 
         let result = set_codex_model_catalog_json_field(input, Some(catalog_path)).unwrap();
         let parsed: toml::Value = toml::from_str(&result).unwrap();
@@ -2972,7 +2972,7 @@ name = "any"
             parsed
                 .get("model_catalog_json")
                 .and_then(|value| value.as_str()),
-            Some(CC_SWITCH_CODEX_MODEL_CATALOG_FILENAME)
+            Some(SWITCHFORGE_CODEX_MODEL_CATALOG_FILENAME)
         );
         assert!(
             parsed
@@ -3013,7 +3013,7 @@ name = "xiaomi_mimo"
     #[test]
     fn native_web_search_field_removes_own_sentinel_when_not_disabled() {
         // Switching away from a native provider must re-enable web search by
-        // removing cc-switch's own "disabled" sentinel.
+        // removing switchforge's own "disabled" sentinel.
         let input = r#"model = "gpt-5.5"
 web_search = "disabled"
 "#;
@@ -3021,14 +3021,14 @@ web_search = "disabled"
         let parsed: toml::Value = toml::from_str(&result).unwrap();
         assert!(
             parsed.get("web_search").is_none(),
-            "cc-switch's disabled sentinel should be removed when not native"
+            "switchforge's disabled sentinel should be removed when not native"
         );
     }
 
     #[test]
     fn native_web_search_field_preserves_user_value() {
         // A user's own web_search value must never be clobbered by cleanup,
-        // only cc-switch's "disabled" sentinel is owned/removable.
+        // only switchforge's "disabled" sentinel is owned/removable.
         let input = r#"web_search = "enabled"
 "#;
         let result = set_codex_native_web_search_field(input, false).unwrap();
@@ -3147,7 +3147,7 @@ web_search = "disabled"
 
     #[test]
     fn resolve_catalog_path_returns_none_when_config_missing_field() {
-        let generated = PathBuf::from("/tmp/.codex/cc-switch-model-catalog.json");
+        let generated = PathBuf::from("/tmp/.codex/switchforge-model-catalog.json");
         assert!(resolve_cc_switch_catalog_path("", &generated).is_none());
         assert!(
             resolve_cc_switch_catalog_path("model = \"gpt-5\"", &generated).is_none(),
@@ -3157,8 +3157,8 @@ web_search = "disabled"
 
     #[test]
     fn resolve_catalog_path_accepts_cc_switch_owned_file() {
-        let generated = PathBuf::from("/tmp/.codex/cc-switch-model-catalog.json");
-        let config = r#"model_catalog_json = "/tmp/.codex/cc-switch-model-catalog.json"
+        let generated = PathBuf::from("/tmp/.codex/switchforge-model-catalog.json");
+        let config = r#"model_catalog_json = "/tmp/.codex/switchforge-model-catalog.json"
 "#;
         let resolved = resolve_cc_switch_catalog_path(config, &generated).expect("path resolves");
         assert_eq!(resolved, generated);
@@ -3166,7 +3166,7 @@ web_search = "disabled"
 
     #[test]
     fn resolve_catalog_path_rejects_user_owned_external_file() {
-        let generated = PathBuf::from("/tmp/.codex/cc-switch-model-catalog.json");
+        let generated = PathBuf::from("/tmp/.codex/switchforge-model-catalog.json");
         let config = r#"model_catalog_json = "/Users/me/.codex/my-handwritten-catalog.json"
 "#;
         assert!(
@@ -3395,10 +3395,10 @@ web_search = "disabled"
         let input = r#"model_provider = "custom"
 model = "glm-5"
 "#;
-        // Simulate a WSL UNC path as cc-switch would see it on Windows;
+        // Simulate a WSL UNC path as switchforge would see it on Windows;
         // the function now writes just the relative filename.
         let unc_path =
-            Path::new(r"\\wsl.localhost\Ubuntu\home\user\.codex\cc-switch-model-catalog.json");
+            Path::new(r"\\wsl.localhost\Ubuntu\home\user\.codex\switchforge-model-catalog.json");
 
         let result = set_codex_model_catalog_json_field(input, Some(unc_path)).unwrap();
         let parsed: toml::Value = toml::from_str(&result).unwrap();
@@ -3408,7 +3408,7 @@ model = "glm-5"
             .and_then(|v| v.as_str())
             .expect("model_catalog_json should be set");
         assert_eq!(
-            written_path, CC_SWITCH_CODEX_MODEL_CATALOG_FILENAME,
+            written_path, SWITCHFORGE_CODEX_MODEL_CATALOG_FILENAME,
             "should write only the relative filename, not the UNC path"
         );
     }
@@ -3418,14 +3418,14 @@ model = "glm-5"
         let input = r#"model_provider = "custom"
 model = "glm-5"
 "#;
-        let regular_path = Path::new("/home/user/.codex/cc-switch-model-catalog.json");
+        let regular_path = Path::new("/home/user/.codex/switchforge-model-catalog.json");
 
         let result = set_codex_model_catalog_json_field(input, Some(regular_path)).unwrap();
         let parsed: toml::Value = toml::from_str(&result).unwrap();
 
         assert_eq!(
             parsed.get("model_catalog_json").and_then(|v| v.as_str()),
-            Some(CC_SWITCH_CODEX_MODEL_CATALOG_FILENAME),
+            Some(SWITCHFORGE_CODEX_MODEL_CATALOG_FILENAME),
             "should write only the relative filename, not the full path"
         );
     }
@@ -3434,13 +3434,13 @@ model = "glm-5"
     fn set_catalog_json_none_removes_cc_switch_owned_by_filename() {
         // After the WSL fix, TOML may contain a Linux-style path.
         // The None arm must still remove it (file_name match catches any format).
-        let input = r#"model_catalog_json = "/home/user/.codex/cc-switch-model-catalog.json"
+        let input = r#"model_catalog_json = "/home/user/.codex/switchforge-model-catalog.json"
 "#;
         let result = set_codex_model_catalog_json_field(input, None).unwrap();
         let parsed: toml::Value = toml::from_str(&result).unwrap();
         assert!(
             parsed.get("model_catalog_json").is_none(),
-            "None arm should remove cc-switch-owned field regardless of path format"
+            "None arm should remove switchforge-owned field regardless of path format"
         );
     }
 
@@ -3460,9 +3460,9 @@ model = "glm-5"
     #[test]
     fn resolve_catalog_finds_relative_filename() {
         let config_text = r#"model_provider = "custom"
-model_catalog_json = "cc-switch-model-catalog.json"
+model_catalog_json = "switchforge-model-catalog.json"
 "#;
-        let generated_path = PathBuf::from("/home/user/.codex/cc-switch-model-catalog.json");
+        let generated_path = PathBuf::from("/home/user/.codex/switchforge-model-catalog.json");
         let result = resolve_cc_switch_catalog_path(config_text, &generated_path);
         assert_eq!(
             result,
@@ -3475,23 +3475,23 @@ model_catalog_json = "cc-switch-model-catalog.json"
     fn resolve_catalog_ignores_user_owned_relative() {
         let config_text = r#"model_catalog_json = "my-custom-catalog.json"
 "#;
-        let generated_path = PathBuf::from("/home/user/.codex/cc-switch-model-catalog.json");
+        let generated_path = PathBuf::from("/home/user/.codex/switchforge-model-catalog.json");
         let result = resolve_cc_switch_catalog_path(config_text, &generated_path);
         assert_eq!(
             result, None,
-            "user-owned catalog should not be claimed by cc-switch"
+            "user-owned catalog should not be claimed by switchforge"
         );
     }
 
     #[test]
     fn set_catalog_json_none_removes_relative_path() {
-        let input = r#"model_catalog_json = "cc-switch-model-catalog.json"
+        let input = r#"model_catalog_json = "switchforge-model-catalog.json"
 "#;
         let result = set_codex_model_catalog_json_field(input, None).unwrap();
         let parsed: toml::Value = toml::from_str(&result).unwrap();
         assert!(
             parsed.get("model_catalog_json").is_none(),
-            "None arm should remove relative cc-switch-owned field"
+            "None arm should remove relative switchforge-owned field"
         );
     }
 }

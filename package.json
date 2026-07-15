@@ -1,8 +1,12 @@
 {
-  "name": "cc-switch",
-  "version": "3.17.0",
-  "description": "All-in-One Assistant for Claude Code, Codex & Gemini CLI",
+  "name": "switchforge",
+  "version": "0.1.0-alpha.1",
+  "description": "A focused provider, MCP, and skills control deck for Claude Code and Codex",
   "type": "module",
+  "packageManager": "pnpm@10.12.3",
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
   "scripts": {
     "dev": "pnpm tauri dev",
     "build": "pnpm tauri build",
@@ -16,7 +20,7 @@
     "test:unit:watch": "vitest watch"
   },
   "keywords": [],
-  "author": "Jason Young",
+  "author": "SivanCola",
   "license": "MIT",
   "devDependencies": {
     "@tauri-apps/cli": "^2.8.0",
