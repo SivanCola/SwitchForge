@@ -8,15 +8,14 @@ export interface TemplateValueConfig {
 }
 
 export interface PresetTheme {
-  icon?: "claude" | "codex" | "gemini" | "generic";
+  icon?: "claude" | "codex" | "generic";
   backgroundColor?: string;
   textColor?: string;
 }
 
 /**
  * SwitchForge intentionally ships only an official Claude Code template and a
- * protocol-compatible custom template. Provider promotions, affiliate links,
- * OAuth bridges, and protocol-conversion presets are not part of this project.
+ * protocol-compatible custom template.
  */
 export interface ProviderPreset {
   name: string;

@@ -244,14 +244,8 @@ function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentView]);
 
-  const handleEditProvider = async ({
-    provider,
-    originalId,
-  }: {
-    provider: Provider;
-    originalId?: string;
-  }) => {
-    await updateProvider(provider, originalId);
+  const handleEditProvider = async ({ provider }: { provider: Provider }) => {
+    await updateProvider(provider);
     setEditingProvider(null);
   };
 

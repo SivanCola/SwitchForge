@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { EnvConflict, BackupInfo } from "@/types/env";
+import type { AppId } from "./types";
 
 /**
  * 环境变量管理 API
@@ -7,11 +8,11 @@ import type { EnvConflict, BackupInfo } from "@/types/env";
 
 /**
  * 检查指定应用的环境变量冲突
- * @param appType 应用类型 ("claude" | "codex" | "gemini")
+ * @param appType SwitchForge application identifier
  * @returns 环境变量冲突列表
  */
 export async function checkEnvConflicts(
-  appType: string,
+  appType: AppId,
 ): Promise<EnvConflict[]> {
   return invoke<EnvConflict[]>("check_env_conflicts", { app: appType });
 }
@@ -40,10 +41,10 @@ export async function restoreEnvBackup(backupPath: string): Promise<void> {
  * @returns 按应用类型分组的环境变量冲突
  */
 export async function checkAllEnvConflicts(): Promise<
-  Record<string, EnvConflict[]>
+  Record<AppId, EnvConflict[]>
 > {
-  const apps = ["claude", "codex", "gemini"];
-  const results: Record<string, EnvConflict[]> = {};
+  const apps: AppId[] = ["claude", "codex"];
+  const results = {} as Record<AppId, EnvConflict[]>;
 
   await Promise.all(
     apps.map(async (app) => {

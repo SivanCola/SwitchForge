@@ -1,10 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type {
-  Settings,
-  WebDavSyncSettings,
-  S3SyncSettings,
-  RemoteSnapshotInfo,
-} from "@/types";
+import type { Settings } from "@/types";
 import type { AppId } from "./types";
 
 export interface ConfigTransferResult {
@@ -14,22 +9,6 @@ export interface ConfigTransferResult {
   backupId?: string;
 }
 
-export interface WebDavTestResult {
-  success: boolean;
-  message?: string;
-}
-
-export interface CodexUnifyHistoryRestoreResult {
-  restoredJsonlFiles: number;
-  restoredStateRows: number;
-  /** 还原被跳过的原因（如当前目录没有账本）；存在时不应报成功 */
-  skippedReason?: string;
-}
-
-export interface WebDavSyncResult {
-  status: string;
-}
-
 export const settingsApi = {
   async get(): Promise<Settings> {
     return await invoke("get_settings");
@@ -37,16 +16,6 @@ export const settingsApi = {
 
   async save(settings: Settings): Promise<boolean> {
     return await invoke("save_settings", { settings });
-  },
-
-  /** 是否存在统一 Codex 会话历史的迁移备份（关闭弹窗据此显示"恢复备份"勾选） */
-  async hasCodexUnifyHistoryBackup(): Promise<boolean> {
-    return await invoke("has_codex_unify_history_backup");
-  },
-
-  /** 按迁移备份账本把当时迁入共享桶的官方会话还原回 openai 桶（幂等） */
-  async restoreCodexUnifiedHistory(): Promise<CodexUnifyHistoryRestoreResult> {
-    return await invoke("restore_codex_unified_history");
   },
 
   async restart(): Promise<boolean> {
@@ -132,76 +101,6 @@ export const settingsApi = {
     return await invoke("import_config_from_file", { filePath });
   },
 
-  // ─── WebDAV sync ──────────────────────────────────────────
-
-  async webdavTestConnection(
-    settings: WebDavSyncSettings,
-    preserveEmptyPassword = true,
-  ): Promise<WebDavTestResult> {
-    return await invoke("webdav_test_connection", {
-      settings,
-      preserveEmptyPassword,
-    });
-  },
-
-  async webdavSyncUpload(): Promise<WebDavSyncResult> {
-    return await invoke("webdav_sync_upload");
-  },
-
-  async webdavSyncDownload(): Promise<WebDavSyncResult> {
-    return await invoke("webdav_sync_download");
-  },
-
-  async webdavSyncSaveSettings(
-    settings: WebDavSyncSettings,
-    passwordTouched = false,
-  ): Promise<{ success: boolean }> {
-    return await invoke("webdav_sync_save_settings", {
-      settings,
-      passwordTouched,
-    });
-  },
-
-  async webdavSyncFetchRemoteInfo(): Promise<
-    RemoteSnapshotInfo | { empty: true }
-  > {
-    return await invoke("webdav_sync_fetch_remote_info");
-  },
-
-  // ===== S3 Sync API =====
-
-  async s3TestConnection(
-    settings: S3SyncSettings,
-    preserveEmptyPassword = true,
-  ): Promise<WebDavTestResult> {
-    return await invoke("s3_test_connection", {
-      settings,
-      preserveEmptyPassword,
-    });
-  },
-
-  async s3SyncUpload(): Promise<WebDavSyncResult> {
-    return await invoke("s3_sync_upload");
-  },
-
-  async s3SyncDownload(): Promise<WebDavSyncResult> {
-    return await invoke("s3_sync_download");
-  },
-
-  async s3SyncSaveSettings(
-    settings: S3SyncSettings,
-    passwordTouched: boolean,
-  ): Promise<{ success: boolean }> {
-    return await invoke("s3_sync_save_settings", {
-      settings,
-      passwordTouched,
-    });
-  },
-
-  async s3SyncFetchRemoteInfo(): Promise<RemoteSnapshotInfo | { empty: true }> {
-    return await invoke("s3_sync_fetch_remote_info");
-  },
-
   async syncCurrentProvidersLive(): Promise<void> {
     const result = (await invoke("sync_current_providers_live")) as {
       success?: boolean;
@@ -276,22 +175,6 @@ export const settingsApi = {
     return await invoke("probe_tool_installations", { tools });
   },
 
-  async getRectifierConfig(): Promise<RectifierConfig> {
-    return await invoke("get_rectifier_config");
-  },
-
-  async setRectifierConfig(config: RectifierConfig): Promise<boolean> {
-    return await invoke("set_rectifier_config", { config });
-  },
-
-  async getOptimizerConfig(): Promise<OptimizerConfig> {
-    return await invoke("get_optimizer_config");
-  },
-
-  async setOptimizerConfig(config: OptimizerConfig): Promise<boolean> {
-    return await invoke("set_optimizer_config", { config });
-  },
-
   async getLogConfig(): Promise<LogConfig> {
     return await invoke("get_log_config");
   },
@@ -319,20 +202,6 @@ export interface ToolInstallationReport {
   needs_confirmation: boolean;
   command: string;
   anchored: boolean;
-}
-
-export interface RectifierConfig {
-  enabled: boolean;
-  requestThinkingSignature: boolean;
-  requestThinkingBudget: boolean;
-  requestMediaFallback: boolean;
-  requestMediaHeuristic: boolean;
-}
-
-export interface OptimizerConfig {
-  enabled: boolean;
-  thinkingOptimizer: boolean;
-  cacheInjection: boolean;
 }
 
 export interface LogConfig {

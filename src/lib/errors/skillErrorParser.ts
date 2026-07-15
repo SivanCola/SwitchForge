@@ -50,7 +50,6 @@ function getErrorI18nKey(code: string): string {
 function getSuggestionI18nKey(suggestion: string): string {
   const mapping: Record<string, string> = {
     checkNetwork: "skills.error.suggestion.checkNetwork",
-    checkProxy: "skills.error.suggestion.checkProxy",
     retryLater: "skills.error.suggestion.retryLater",
     checkRepoUrl: "skills.error.suggestion.checkRepoUrl",
     checkPermission: "skills.error.suggestion.checkPermission",

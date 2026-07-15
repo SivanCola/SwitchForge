@@ -88,12 +88,9 @@ describe("useProviderActions core flow", () => {
     const provider = createProvider();
     const { result } = renderHook(() => useProviderActions("claude"));
 
-    await act(async () => result.current.updateProvider(provider, "old-id"));
+    await act(async () => result.current.updateProvider(provider));
 
-    expect(updateProviderMutateAsync).toHaveBeenCalledWith({
-      provider,
-      originalId: "old-id",
-    });
+    expect(updateProviderMutateAsync).toHaveBeenCalledWith({ provider });
     expect(updateTrayMenuMock).toHaveBeenCalledOnce();
   });
 

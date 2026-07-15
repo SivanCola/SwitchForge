@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { providersApi, settingsApi, type AppId } from "@/lib/api";
+import { providersApi, settingsApi } from "@/lib/api";
+import type { SupportedAppId } from "@/config/appRegistry";
 import type { Provider } from "@/types";
 import {
   useAddProviderMutation,
@@ -12,14 +13,11 @@ import {
 import { extractErrorMessage } from "@/utils/errorUtils";
 
 type ProviderInput = Omit<Provider, "id"> & {
-  providerKey?: string;
-  addToLive?: boolean;
-  ensureClaudeDesktopOfficialSeed?: boolean;
   ensureCodexOfficialSeed?: boolean;
 };
 
 /** Core Provider operations shared by the Claude Code and Codex adapters. */
-export function useProviderActions(activeApp: AppId) {
+export function useProviderActions(activeApp: SupportedAppId) {
   const { t } = useTranslation();
   const addProviderMutation = useAddProviderMutation(activeApp);
   const updateProviderMutation = useUpdateProviderMutation(activeApp);
@@ -56,8 +54,8 @@ export function useProviderActions(activeApp: AppId) {
   );
 
   const updateProvider = useCallback(
-    async (provider: Provider, originalId?: string) => {
-      await updateProviderMutation.mutateAsync({ provider, originalId });
+    async (provider: Provider) => {
+      await updateProviderMutation.mutateAsync({ provider });
       await providersApi.updateTrayMenu().catch((error) => {
         console.error(
           "Failed to update tray menu after provider update",

@@ -55,10 +55,6 @@ vi.mock("@/components/providers/ProviderCard", () => ({
   },
 }));
 
-vi.mock("@/components/UsageFooter", () => ({
-  default: () => <div data-testid="usage-footer" />,
-}));
-
 vi.mock("@dnd-kit/sortable", async () => {
   const actual = await vi.importActual<any>("@dnd-kit/sortable");
 
@@ -69,19 +65,11 @@ vi.mock("@dnd-kit/sortable", async () => {
 });
 
 // Mock hooks that use QueryClient
-vi.mock("@/hooks/useStreamCheck", () => ({
-  useStreamCheck: () => ({
+vi.mock("@/hooks/useConnectivityCheck", () => ({
+  useConnectivityCheck: () => ({
     checkProvider: vi.fn(),
     isChecking: () => false,
   }),
-}));
-
-vi.mock("@/lib/query/failover", () => ({
-  useAutoFailoverEnabled: () => ({ data: false }),
-  useFailoverQueue: () => ({ data: [] }),
-  useAddToFailoverQueue: () => ({ mutate: vi.fn() }),
-  useRemoveFromFailoverQueue: () => ({ mutate: vi.fn() }),
-  useReorderFailoverQueue: () => ({ mutate: vi.fn() }),
 }));
 
 function createProvider(overrides: Partial<Provider> = {}): Provider {

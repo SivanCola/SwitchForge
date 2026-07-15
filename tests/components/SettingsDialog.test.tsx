@@ -20,23 +20,6 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: tMock }),
 }));
 
-vi.mock("@/hooks/useProxyStatus", () => ({
-  useProxyStatus: () => ({
-    status: null,
-    isLoading: false,
-    isRunning: false,
-    isTakeoverActive: false,
-    startWithTakeover: vi.fn(),
-    stopWithRestore: vi.fn(),
-    switchProxyProvider: vi.fn(),
-    checkRunning: vi.fn(),
-    checkTakeoverActive: vi.fn(),
-    isStarting: false,
-    isStopping: false,
-    isPending: false,
-  }),
-}));
-
 interface SettingsMock {
   settings: any;
   isLoading: boolean;
@@ -235,12 +218,6 @@ vi.mock("@/components/settings/DirectorySettings", () => ({
 
 vi.mock("@/components/settings/AboutSection", () => ({
   AboutSection: ({ isPortable }: any) => <div>about:{String(isPortable)}</div>,
-}));
-
-vi.mock("@/components/settings/WebdavSyncSection", () => ({
-  WebdavSyncSection: ({ config }: any) => (
-    <div>webdav-sync-section:{config?.baseUrl ?? "none"}</div>
-  ),
 }));
 
 let settingsApi: any;

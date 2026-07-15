@@ -43,7 +43,7 @@ import { DirectorySettings } from "@/components/settings/DirectorySettings";
 import { ImportExportSection } from "@/components/settings/ImportExportSection";
 import { BackupListSection } from "@/components/settings/BackupListSection";
 import { AboutSection } from "@/components/settings/AboutSection";
-import { ConnectivityCheckConfigPanel } from "@/components/usage/ConnectivityCheckConfigPanel";
+import { ConnectivityCheckConfigPanel } from "@/components/settings/ConnectivityCheckConfigPanel";
 import { LogConfigPanel } from "@/components/settings/LogConfigPanel";
 import { useInstalledSkills } from "@/hooks/useSkills";
 import { useSettings } from "@/hooks/useSettings";
@@ -231,7 +231,7 @@ export function SettingsPage({
                     />
                     <ThemeSettings />
                     <SkillStorageLocationSettings
-                      value={settings.skillStorageLocation ?? "cc_switch"}
+                      value={settings.skillStorageLocation ?? "switchforge"}
                       installedCount={installedSkills?.length ?? 0}
                       onMigrated={(skillStorageLocation) =>
                         updateSettings({ skillStorageLocation })
