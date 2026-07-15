@@ -1,14 +1,14 @@
 import type { AppId } from "@/lib/api";
 import type { VisibleApps } from "@/types";
 import { ProviderIcon } from "@/components/ProviderIcon";
+import { APP_REGISTRY, SUPPORTED_APP_IDS } from "@/config/appRegistry";
 import { cn } from "@/lib/utils";
-import { Monitor, Terminal } from "lucide-react";
+import { Terminal } from "lucide-react";
 
 const APP_BADGE_ICON: Partial<
   Record<AppId, { icon: typeof Terminal; offsetY?: number }>
 > = {
   claude: { icon: Terminal },
-  "claude-desktop": { icon: Monitor, offsetY: 0.5 },
 };
 
 interface AppSwitcherProps {
@@ -18,16 +18,8 @@ interface AppSwitcherProps {
   compact?: boolean;
 }
 
-const ALL_APPS: AppId[] = [
-  "claude",
-  "claude-desktop",
-  "codex",
-  "gemini",
-  "opencode",
-  "openclaw",
-  "hermes",
-];
-const STORAGE_KEY = "switchforge-last-app";
+const ALL_APPS: AppId[] = [...SUPPORTED_APP_IDS];
+const STORAGE_KEY = "switchforge:last-app";
 
 export function AppSwitcher({
   activeApp,
@@ -41,25 +33,6 @@ export function AppSwitcher({
     onSwitch(app);
   };
   const iconSize = 20;
-  const appIconName: Record<AppId, string> = {
-    claude: "claude",
-    "claude-desktop": "claude",
-    codex: "openai",
-    gemini: "gemini",
-    opencode: "opencode",
-    openclaw: "openclaw",
-    hermes: "hermes",
-  };
-  const appDisplayName: Record<AppId, string> = {
-    claude: "Claude Code",
-    "claude-desktop": "Claude Desktop",
-    codex: "Codex",
-    gemini: "Gemini",
-    opencode: "OpenCode",
-    openclaw: "OpenClaw",
-    hermes: "Hermes",
-  };
-
   // Filter apps based on visibility settings (default all visible)
   const appsToShow = ALL_APPS.filter((app) => {
     if (!visibleApps) return true;
@@ -69,6 +42,7 @@ export function AppSwitcher({
   return (
     <div className="inline-flex bg-muted rounded-xl p-1 gap-1">
       {appsToShow.map((app) => {
+        const appInfo = APP_REGISTRY[app as keyof typeof APP_REGISTRY];
         const badgeConfig = APP_BADGE_ICON[app];
         const BadgeIcon = badgeConfig?.icon;
         const isActive = activeApp === app;
@@ -86,8 +60,8 @@ export function AppSwitcher({
           >
             <span className="relative inline-flex shrink-0">
               <ProviderIcon
-                icon={appIconName[app]}
-                name={appDisplayName[app]}
+                icon={appInfo.icon}
+                name={appInfo.label}
                 size={iconSize}
               />
               {BadgeIcon && (
@@ -120,7 +94,7 @@ export function AppSwitcher({
                   : "max-w-[120px] opacity-100 ml-2",
               )}
             >
-              {appDisplayName[app]}
+              {appInfo.label}
             </span>
           </button>
         );

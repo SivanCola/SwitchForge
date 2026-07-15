@@ -273,7 +273,10 @@ export function useSettings(): UseSettingsResult {
         // 持久化语言偏好
         try {
           if (typeof window !== "undefined" && updates.language) {
-            window.localStorage.setItem("language", updates.language);
+            window.localStorage.setItem(
+              "switchforge:language",
+              updates.language,
+            );
           }
         } catch (error) {
           console.warn(
@@ -407,7 +410,10 @@ export function useSettings(): UseSettingsResult {
 
         try {
           if (typeof window !== "undefined" && payload.language) {
-            window.localStorage.setItem("language", payload.language);
+            window.localStorage.setItem(
+              "switchforge:language",
+              payload.language,
+            );
           }
         } catch (error) {
           console.warn(

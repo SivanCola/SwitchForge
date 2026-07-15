@@ -6,12 +6,14 @@ pub mod env_checker;
 pub mod env_manager;
 pub mod mcp;
 pub mod model_fetch;
+#[allow(dead_code)]
 pub mod omo;
 pub mod profile;
 pub mod prompt;
 pub mod provider;
 pub mod proxy;
 pub mod s3;
+#[allow(dead_code)]
 pub mod s3_auto_sync;
 pub mod s3_sync;
 pub mod session_usage;
@@ -27,6 +29,7 @@ pub mod sync_protocol;
 pub mod usage_cache;
 pub mod usage_stats;
 pub mod webdav;
+#[allow(dead_code)]
 pub mod webdav_auto_sync;
 pub mod webdav_sync;
 
