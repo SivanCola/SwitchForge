@@ -109,7 +109,7 @@ describe("useSettingsForm Hook", () => {
       data: null,
       isLoading: false,
     });
-    window.localStorage.setItem("language", "en");
+    window.localStorage.setItem("switchforge:language", "en");
 
     const { result } = renderHook(() => useSettingsForm());
 

@@ -31,6 +31,7 @@ static EMIT_SCHEDULED: AtomicBool = AtomicBool::new(false);
 ///
 /// 重复调用是无害的（OnceLock 仅首次写入生效），但应用启动期只该被
 /// `lib.rs::run` 调一次。
+#[allow(dead_code)]
 pub fn init(handle: AppHandle) {
     if APP_HANDLE.set(handle).is_err() {
         log::debug!("usage_events::init 重复调用，已忽略");

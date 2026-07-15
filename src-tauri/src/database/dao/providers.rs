@@ -586,10 +586,10 @@ impl Database {
         Ok(max.map(|v| (v + 1) as usize).unwrap_or(0))
     }
 
-    /// 启动时调用：补齐缺失的官方预设供应商（Claude / Codex / Gemini）。
+    /// 启动时调用：补齐缺失的 Claude Code / Codex 官方预设。
     ///
     /// 使用 settings flag `official_providers_seeded` 保证每个数据库只执行一次：
-    /// - 全新用户：seed 三条官方预设
+    /// - 全新用户：seed 两条官方预设
     /// - 老用户升级：同样会触发一次（flag 不存在），追加到末尾，不影响已有排序
     /// - 用户删除 seed 后：不再重建（flag 已为 true），尊重用户意图
     ///
@@ -609,6 +609,12 @@ impl Database {
         let now_ms = chrono::Utc::now().timestamp_millis();
 
         for seed in OFFICIAL_SEEDS {
+            if !matches!(
+                seed.app_type,
+                crate::app_config::AppType::Claude | crate::app_config::AppType::Codex
+            ) {
+                continue;
+            }
             let app_type_str = seed.app_type.as_str();
 
             // 若该 id 已存在（极端情况：用户曾手动用过同 id），跳过
@@ -715,6 +721,22 @@ mod ensure_official_seed_tests {
     };
 
     #[test]
+    fn startup_seeds_only_claude_and_codex() {
+        let db = Database::memory().expect("memory db");
+        assert_eq!(db.init_default_official_providers().expect("seed"), 2);
+        assert_eq!(db.get_all_providers("claude").expect("claude").len(), 1);
+        assert_eq!(db.get_all_providers("codex").expect("codex").len(), 1);
+        assert!(db
+            .get_all_providers(AppType::ClaudeDesktop.as_str())
+            .expect("claude desktop")
+            .is_empty());
+        assert!(db
+            .get_all_providers(AppType::Gemini.as_str())
+            .expect("gemini")
+            .is_empty());
+    }
+
+    #[test]
     fn ensure_inserts_when_missing() {
         let db = Database::memory().expect("memory db");
         let inserted = db
@@ -740,7 +762,8 @@ mod ensure_official_seed_tests {
     #[test]
     fn ensure_skips_when_present_and_preserves_customization() {
         let db = Database::memory().expect("memory db");
-        db.init_default_official_providers().expect("seed");
+        db.ensure_official_seed_by_id(CLAUDE_DESKTOP_OFFICIAL_PROVIDER_ID, AppType::ClaudeDesktop)
+            .expect("seed");
 
         let mut renamed = db
             .get_provider_by_id(

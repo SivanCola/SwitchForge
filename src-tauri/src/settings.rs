@@ -755,6 +755,7 @@ where
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn is_codex_third_party_history_provider_bucket_migrated() -> bool {
     get_settings()
         .local_migrations
@@ -767,6 +768,7 @@ pub fn is_codex_third_party_history_provider_bucket_migrated() -> bool {
         .is_some_and(|m| m.scanned_history_files)
 }
 
+#[allow(dead_code)]
 pub fn mark_codex_third_party_history_provider_bucket_migrated(
     migration: CodexThirdPartyHistoryProviderBucketMigration,
 ) -> Result<(), AppError> {
@@ -778,6 +780,7 @@ pub fn mark_codex_third_party_history_provider_bucket_migrated(
     })
 }
 
+#[allow(dead_code)]
 pub fn is_codex_provider_template_migrated() -> bool {
     get_settings()
         .local_migrations
@@ -786,6 +789,7 @@ pub fn is_codex_provider_template_migrated() -> bool {
         .is_some()
 }
 
+#[allow(dead_code)]
 pub fn mark_codex_provider_template_migrated(
     migration: CodexProviderTemplateMigration,
 ) -> Result<(), AppError> {

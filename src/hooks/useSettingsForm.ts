@@ -81,7 +81,7 @@ export function useSettingsForm(): UseSettingsFormResult {
 
   const readPersistedLanguage = useCallback((): Language => {
     if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem("language");
+      const stored = window.localStorage.getItem("switchforge:language");
       if (isSupportedLanguage(stored)) {
         return normalizeLanguage(stored);
       }
