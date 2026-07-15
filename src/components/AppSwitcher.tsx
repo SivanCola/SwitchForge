@@ -1,7 +1,11 @@
 import type { AppId } from "@/lib/api";
 import type { VisibleApps } from "@/types";
 import { ProviderIcon } from "@/components/ProviderIcon";
-import { APP_REGISTRY, SUPPORTED_APP_IDS } from "@/config/appRegistry";
+import {
+  APP_REGISTRY,
+  SUPPORTED_APP_IDS,
+  type SupportedAppId,
+} from "@/config/appRegistry";
 import { cn } from "@/lib/utils";
 import { Terminal } from "lucide-react";
 
@@ -12,13 +16,13 @@ const APP_BADGE_ICON: Partial<
 };
 
 interface AppSwitcherProps {
-  activeApp: AppId;
-  onSwitch: (app: AppId) => void;
+  activeApp: SupportedAppId;
+  onSwitch: (app: SupportedAppId) => void;
   visibleApps?: VisibleApps;
   compact?: boolean;
 }
 
-const ALL_APPS: AppId[] = [...SUPPORTED_APP_IDS];
+const ALL_APPS: SupportedAppId[] = [...SUPPORTED_APP_IDS];
 const STORAGE_KEY = "switchforge:last-app";
 
 export function AppSwitcher({
@@ -27,7 +31,7 @@ export function AppSwitcher({
   visibleApps,
   compact,
 }: AppSwitcherProps) {
-  const handleSwitch = (app: AppId) => {
+  const handleSwitch = (app: SupportedAppId) => {
     if (app === activeApp) return;
     localStorage.setItem(STORAGE_KEY, app);
     onSwitch(app);

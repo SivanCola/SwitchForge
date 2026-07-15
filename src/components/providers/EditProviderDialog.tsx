@@ -8,7 +8,8 @@ import {
   ProviderForm,
   type ProviderFormValues,
 } from "@/components/providers/forms/ProviderForm";
-import { openclawApi, providersApi, vscodeApi, type AppId } from "@/lib/api";
+import { providersApi, vscodeApi } from "@/lib/api";
+import type { SupportedAppId } from "@/config/appRegistry";
 
 interface EditProviderDialogProps {
   open: boolean;
@@ -18,8 +19,7 @@ interface EditProviderDialogProps {
     provider: Provider;
     originalId?: string;
   }) => Promise<void> | void;
-  appId: AppId;
-  isProxyTakeover?: boolean; // 代理接管模式下不读取 live（避免显示被接管后的代理配置）
+  appId: SupportedAppId;
 }
 
 export function EditProviderDialog({
@@ -28,7 +28,6 @@ export function EditProviderDialog({
   onOpenChange,
   onSubmit,
   appId,
-  isProxyTakeover = false,
 }: EditProviderDialogProps) {
   const { t } = useTranslation();
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
@@ -53,47 +52,6 @@ export function EditProviderDialog({
 
       // 关键修复：只在首次打开时加载一次
       if (hasLoadedLive) {
-        return;
-      }
-
-      // 代理接管模式：Live 配置已被代理改写，读取 live 会导致编辑界面展示代理地址/占位符等内容
-      // 因此直接回退到 SSOT（数据库）配置，避免用户困惑与误保存
-      if (isProxyTakeover) {
-        if (!cancelled) {
-          setLiveSettings(null);
-          setHasLoadedLive(true);
-        }
-        return;
-      }
-
-      // OpenCode uses additive mode - each provider's config is stored independently in DB
-      // Reading live config would return the full opencode.json (with $schema, provider, mcp etc.)
-      // instead of just the provider fragment, causing incorrect nested structure on save
-      if (appId === "opencode") {
-        if (!cancelled) {
-          setLiveSettings(null);
-          setHasLoadedLive(true);
-        }
-        return;
-      }
-
-      if (appId === "openclaw") {
-        try {
-          const live = await openclawApi.getLiveProvider(provider.id);
-          if (!cancelled && live && typeof live === "object") {
-            setLiveSettings(live);
-          } else if (!cancelled) {
-            setLiveSettings(null);
-          }
-        } catch {
-          if (!cancelled) {
-            setLiveSettings(null);
-          }
-        } finally {
-          if (!cancelled) {
-            setHasLoadedLive(true);
-          }
-        }
         return;
       }
 
@@ -129,7 +87,7 @@ export function EditProviderDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, provider?.id, appId, hasLoadedLive, isProxyTakeover]); // 只依赖 provider.id，不依赖整个 provider 对象
+  }, [open, provider?.id, appId, hasLoadedLive]); // 只依赖 provider.id，不依赖整个 provider 对象
 
   const initialSettingsConfig = useMemo(() => {
     const base = (liveSettings ?? provider?.settingsConfig ?? {}) as Record<
@@ -183,20 +141,14 @@ export function EditProviderDialog({
       if (!provider) return;
 
       // 注意：values.settingsConfig 已经是最终的配置字符串
-      // ProviderForm 已经为不同的 app 类型（Claude/Codex/Gemini）正确组装了配置
+      // ProviderForm 已按 Claude/Codex 的原生配置结构组装配置。
       const parsedConfig = JSON.parse(values.settingsConfig) as Record<
         string,
         unknown
       >;
-      const nextProviderId =
-        (appId === "opencode" || appId === "openclaw") &&
-        values.providerKey?.trim()
-          ? values.providerKey.trim()
-          : provider.id;
-
       const updatedProvider: Provider = {
         ...provider,
-        id: nextProviderId,
+        id: provider.id,
         name: values.name.trim(),
         notes: values.notes?.trim() || undefined,
         websiteUrl: values.websiteUrl?.trim() || undefined,
@@ -247,7 +199,6 @@ export function EditProviderDialog({
         onSubmittingChange={setIsFormSubmitting}
         initialData={initialData}
         showButtons={false}
-        isProxyTakeover={isProxyTakeover}
       />
     </FullScreenPanel>
   );
