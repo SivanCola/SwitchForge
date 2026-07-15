@@ -20,7 +20,8 @@ import {
 } from "lucide-react";
 import type { Provider } from "@/types";
 import type { EnvConflict } from "@/types/env";
-import type { AppId, ProviderSwitchEvent } from "@/lib/api";
+import type { ProviderSwitchEvent } from "@/lib/api";
+import type { SupportedAppId } from "@/config/appRegistry";
 import { providersApi, settingsApi } from "@/lib/api";
 import { useProvidersQuery, useSettingsQuery } from "@/lib/query/queries";
 import { checkAllEnvConflicts, checkEnvConflicts } from "@/lib/api/env";
@@ -61,7 +62,7 @@ const APP_STORAGE_KEY = "switchforge:last-app";
 const VIEW_STORAGE_KEY = "switchforge:last-view";
 const VALID_VIEWS: readonly View[] = ["providers", "mcp", "skills", "settings"];
 
-const getInitialApp = (): AppId => {
+const getInitialApp = (): SupportedAppId => {
   const saved = localStorage.getItem(APP_STORAGE_KEY);
   return isSupportedAppId(saved) ? saved : "claude";
 };
@@ -74,7 +75,7 @@ const getInitialView = (): View => {
 function App() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [activeApp, setActiveApp] = useState<AppId>(getInitialApp);
+  const [activeApp, setActiveApp] = useState<SupportedAppId>(getInitialApp);
   const [currentView, setCurrentView] = useState<View>(getInitialView);
   const [settingsDefaultTab, setSettingsDefaultTab] = useState("general");
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -646,7 +647,6 @@ function App() {
         onOpenChange={(open) => !open && setEditingProvider(null)}
         onSubmit={handleEditProvider}
         appId={activeApp}
-        isProxyTakeover={false}
       />
       <ConfirmDialog
         isOpen={Boolean(deletingProvider)}
